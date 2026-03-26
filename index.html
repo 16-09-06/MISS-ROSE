@@ -106,6 +106,30 @@
     </div>
 </div>
 
+<!-- MODAL FICHA DO CLIENTE (MINI-CRM) -->
+<div id="modalFichaCliente" class="hidden" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 3500; display: flex; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box;">
+    <div class="container" style="max-width: 500px; width: 100%; max-height: 90vh; overflow-y: auto; position: relative; margin-bottom: 0;">
+        <button onclick="fecharFichaCliente()" style="position: absolute; top: 15px; right: 15px; background: none; color: #888; border: none; font-size: 20px; width: auto; padding: 0; margin: 0;"><i class="fas fa-times"></i></button>
+        
+        <h2 style="font-size: 20px; margin-bottom: 5px; text-align: left;"><i class="fas fa-user-tie"></i> Ficha do Cliente</h2>
+        <h3 id="fichaNomeCliente" style="color: var(--text); margin-top: 0; font-size: 16px; word-wrap: break-word;">NOME DO CLIENTE</h3>
+        
+        <div class="kpi-grid" style="grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px;">
+            <div class="kpi-card" style="padding: 15px;">
+                <div class="kpi-info"><h3>Total Gasto</h3><p id="fichaTotalGasto" style="font-size: 18px;">R$ 0,00</p></div>
+            </div>
+            <div class="kpi-card" style="padding: 15px; border-left-color: #17a2b8;">
+                <div class="kpi-info"><h3>Última Compra</h3><p id="fichaUltimaCompra" style="font-size: 16px;">--/--/----</p></div>
+            </div>
+        </div>
+        
+        <h4 style="border-bottom: 1px solid #ddd; padding-bottom: 5px; margin-top: 20px;">Últimas Compras</h4>
+        <div id="fichaListaCompras" style="max-height: 200px; overflow-y: auto; font-size: 13px;">
+            <!-- Preenchido via JS -->
+        </div>
+    </div>
+</div>
+
 <header id="mainHeader">
     <div class="logo-area">
         <img src="logo_missrose.png" alt="MISS RÔSE">
@@ -131,6 +155,7 @@
     <div style="display: flex; justify-content: center; align-items: center; margin-bottom: 20px; gap: 10px; flex-wrap: wrap;">
         <label style="margin: 0; font-size: 14px;">Mês/Ano:</label>
         <select id="filtroMesDash" onchange="carregarDashboardReal()" style="width: auto; margin: 0; padding: 8px 15px; border-radius: 8px; border: 1px solid var(--primary); background: #fff; font-weight: bold; color: var(--primary); cursor: pointer;">
+            <option value="ANO INTEIRO">ANO INTEIRO</option>
             <option value="JANEIRO">JANEIRO</option>
             <option value="FEVEREIRO">FEVEREIRO</option>
             <option value="MARÇO">MARÇO</option>
@@ -187,7 +212,7 @@
     <!-- GRÁFICOS EM TEMPO REAL -->
     <div class="chart-grid">
         <div class="chart-card">
-            <h3>Faturamento Mensal (Anual)</h3>
+            <h3 id="tituloEvolucao">Evolução Diária (Mês Atual x Mês Anterior)</h3>
             <div style="position: relative; height: 250px; width: 100%;">
                 <canvas id="graficoMensal"></canvas>
             </div>
