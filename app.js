@@ -1636,6 +1636,8 @@ function initOneSignal() {
         await OneSignal.init({
             appId: ONESIGNAL_APP_ID,
             notifyButton: { enable: false },
+            serviceWorkerParam: { scope: '/' },
+            serviceWorkerPath: 'sw.js'
         });
 
         // Intercepta a notificação e joga para o nosso "Sininho" do aplicativo
@@ -1674,12 +1676,15 @@ function tagOneSignalUser(user) {
     const userUpper = user.toUpperCase();
     const equipeRenata = ['RENATA', 'HOZANA', 'ISRAEL', 'ROSANGELA', 'SARA', 'VINICIUS'];
     const equipeCarol  = ['CAROL', 'ALICE', 'CHARLENE', 'HEMILLY', 'MICHELLE'];
+    const superAdmins = ['KAYK', 'JHONATA', 'DEBORA', 'FELIPE'];
     
     window.OneSignalDeferred.push(async function(OneSignal) {
         if (equipeRenata.includes(userUpper)) {
             OneSignal.User.addTag("equipe", "equipe_renata");
         } else if (equipeCarol.includes(userUpper)) {
             OneSignal.User.addTag("equipe", "equipe_carol");
+        } else if (superAdmins.includes(userUpper)) {
+            OneSignal.User.addTag("equipe", "admin"); // Tag especial para vocês receberem testes
         }
     });
 }
