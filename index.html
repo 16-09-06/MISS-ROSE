@@ -143,6 +143,11 @@
         <a id="navConfig" onclick="alternarTela('config')"><i class="fas fa-cog"></i> Configurações</a>
     </nav>
     <div style="display: flex; align-items: center; gap: 15px;">
+        <!-- SININHO DE NOTIFICAÇÕES -->
+        <div style="position: relative; cursor: pointer; margin-right: 5px;" onclick="abrirPainelNotificacoes()" title="Notificações">
+            <i class="fas fa-bell" style="color: white; font-size: 20px;"></i>
+            <span id="badgeNotificacao" style="position: absolute; top: -5px; right: -10px; background: #ffc107; color: #333; border-radius: 50%; padding: 2px 6px; font-size: 10px; font-weight: bold; display: none; box-shadow: 0 0 5px rgba(0,0,0,0.3);">0</span>
+        </div>
         <i id="btnDarkMode" class="fas fa-moon" onclick="toggleDarkMode()" style="color: white; cursor: pointer; font-size: 20px;" title="Modo Escuro"></i>
         <div id="nomeUsuarioHeader" onclick="abrirModalLogin()" style="color: white; font-weight: bold; cursor: pointer;">
             <i class="fas fa-user-circle"></i> <span id="userNameDisplay">Fazer Login</span> 
@@ -496,6 +501,20 @@
 </div>
 
 <script src="app.js"></script>
+
+<!-- MODAL DO PAINEL DE NOTIFICAÇÕES -->
+<div id="modalNotificacoes" class="hidden" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 4000; display: flex; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box;">
+    <div class="container" style="max-width: 400px; width: 100%; max-height: 80vh; overflow-y: auto; position: relative; margin-bottom: 0;">
+        <button onclick="fecharPainelNotificacoes()" style="position: absolute; top: 15px; right: 15px; background: none; color: #888; border: none; font-size: 20px; width: auto; padding: 0; margin: 0;"><i class="fas fa-times"></i></button>
+        
+        <h2 style="font-size: 20px; margin-bottom: 15px; text-align: left;"><i class="fas fa-bell"></i> Avisos e Mensagens</h2>
+        <div id="listaNotificacoesPainel" style="display: flex; flex-direction: column; gap: 10px;">
+            <!-- Preenchido via JS -->
+        </div>
+        <button onclick="limparNotificacoes()" style="margin-top: 15px; background: #6c757d; font-size: 14px;"><i class="fas fa-trash"></i> Limpar Avisos Lidos</button>
+    </div>
+</div>
+
 <div id="modalLogin" class="hidden" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 2000; display: flex; align-items: center; justify-content: center;">
     <div class="container" style="max-width: 350px; margin-bottom: 0;">
         <h2 id="tituloLogin">Acesso Miss Rôse</h2>

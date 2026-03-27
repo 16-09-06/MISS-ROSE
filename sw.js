@@ -1,4 +1,4 @@
-const CACHE_NAME = 'missrose-v7';
+const CACHE_NAME = 'missrose-v8';
 const urlsToCache = [
 
     './',
@@ -74,10 +74,16 @@ self.addEventListener('message', (event) => {
 
 // Evento disparado quando uma notificação push é recebida
 self.addEventListener('push', (e) => {
-    const data = e.data.json(); // Assumimos que o servidor envia um JSON
-    console.log('[Service Worker] Push Recebido.');
-    console.log(data);
+    let data = {};
+    try {
+        data = e.data.json();
+    } catch(err) {
+        // Fallback caso o servidor envie texto puro em vez de JSON
+        data = { title: 'Aviso Miss Rôse', body: e.data.text(), url: '/' };
+    }
 
+    console.log('[Service Worker] Push Recebido.', data);
+    
     const title = data.title || 'Miss Rôse Informa';
     const options = {
         body: data.body || 'Você tem uma nova mensagem.',
@@ -88,7 +94,15 @@ self.addEventListener('push', (e) => {
         }
     };
 
-    e.waitUntil(self.registration.showNotification(title, options));
+    e.waitUntil(
+        // Envia a notificação para o App (se estiver aberto) para atualizar o sininho
+        clients.matchAll({ type: 'window' }).then((clientList) => {
+            clientList.forEach(client => {
+                client.postMessage({ type: 'NOVA_NOTIFICACAO', payload: data });
+            });
+        })
+        .then(() => self.registration.showNotification(title, options))
+    );
 });
 
 // Evento disparado quando o usuário clica na notificação

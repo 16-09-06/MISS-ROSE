@@ -13,7 +13,7 @@ const ID_PLANILHA_COMISSOES = "17PYbOV8CuEwghbaDiUmJXvc1mCT7tZ55iKvkQFzTeXc";
 const VAPID_PUBLIC_KEY = "BGypw8mTc6GQyLOdsO33Qdy-Pqg4K0jj7UQ8PKZkvA-hDloY8DO1x43N0eCQsA8gPcGvRskpk8MlDl3g80WcOPE"; // Chave pública gerada no VapidKeys
 
 // Controle de Versão do App (Mude sempre que enviar atualização)
-const APP_VERSION = "1.0.7";
+const APP_VERSION = "1.0.8";
 
 let usuarioLogado = localStorage.getItem('usuarioLogado');
 
@@ -967,6 +967,7 @@ async function sincronizarFilaOffline() {
 // --- INICIALIZAÇÕES ---
 document.addEventListener("DOMContentLoaded", () => {
     mudarCorEquipe();
+    atualizarBadgeNotificacoes(); // Inicia o contador de notificações
 
     // Máscaras (IMask)
     const cnpjInput = document.getElementById('cnpjInput');
@@ -1020,6 +1021,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Registra o Service Worker (Aplicativo de Celular / PWA)
     if ('serviceWorker' in navigator) {
+        // Ouve mensagens enviadas pelo Service Worker (As notificações push que chegam)
+        navigator.serviceWorker.addEventListener('message', (event) => {
+            if (event.data && event.data.type === 'NOVA_NOTIFICACAO') {
+                salvarNotificacaoLocal(event.data.payload);
+                // Se o app estiver aberto na tela, exibe um balãozinho amigável na hora
+                Toast.fire({ icon: 'info', title: 'Você recebeu uma nova mensagem!' });
+            }
+        });
+
         navigator.serviceWorker.register('sw.js').then(registration => {
             console.log('Service Worker registrado com sucesso!');
 
@@ -1765,4 +1775,70 @@ async function checkPushSubscription() {
         pushButton.innerHTML = '<i class="fas fa-check-circle"></i> Inscrito';
         pushButton.disabled = true;
     }
+}
+
+// --- SISTEMA DE CAIXA DE MENSAGENS (IN-APP) ---
+
+function salvarNotificacaoLocal(payload) {
+    let notifs = JSON.parse(localStorage.getItem('appNotificacoes') || '[]');
+    notifs.unshift({
+        title: payload.title || "Aviso Miss Rôse",
+        body: payload.body || "Você tem uma nova mensagem.",
+        date: new Date().toLocaleString('pt-BR'),
+        lida: false
+    });
+    localStorage.setItem('appNotificacoes', JSON.stringify(notifs));
+    atualizarBadgeNotificacoes();
+}
+
+function atualizarBadgeNotificacoes() {
+    let notifs = JSON.parse(localStorage.getItem('appNotificacoes') || '[]');
+    let naoLidas = notifs.filter(n => !n.lida).length;
+    const badge = document.getElementById('badgeNotificacao');
+    
+    if (badge) {
+        if (naoLidas > 0) {
+            badge.innerText = naoLidas > 9 ? "9+" : naoLidas;
+            badge.style.display = 'block';
+        } else {
+            badge.style.display = 'none';
+        }
+    }
+}
+
+function abrirPainelNotificacoes() {
+    document.getElementById('modalNotificacoes').classList.remove('hidden');
+    renderizarNotificacoes();
+}
+
+function fecharPainelNotificacoes() {
+    document.getElementById('modalNotificacoes').classList.add('hidden');
+    // Marca todas como lidas ao fechar o painel
+    let notifs = JSON.parse(localStorage.getItem('appNotificacoes') || '[]');
+    notifs.forEach(n => n.lida = true);
+    localStorage.setItem('appNotificacoes', JSON.stringify(notifs));
+    atualizarBadgeNotificacoes();
+}
+
+function renderizarNotificacoes() {
+    let notifs = JSON.parse(localStorage.getItem('appNotificacoes') || '[]');
+    const container = document.getElementById('listaNotificacoesPainel');
+    if (notifs.length === 0) {
+        container.innerHTML = '<p style="text-align: center; color: #888; margin-top: 20px;">Nenhuma mensagem no momento.</p>';
+        return;
+    }
+    container.innerHTML = notifs.map(n => `
+        <div style="background: ${n.lida ? 'transparent' : 'rgba(216, 27, 96, 0.05)'}; border: 1px solid ${n.lida ? '#ddd' : 'var(--primary)'}; border-left: 4px solid ${n.lida ? '#ccc' : 'var(--primary)'}; padding: 12px; border-radius: 6px; font-size: 13px; transition: 0.3s;">
+            <strong style="display: block; color: var(--primary); margin-bottom: 5px; font-size: 14px;">${n.title}</strong>
+            <p style="margin: 0 0 5px 0; color: var(--text);">${n.body}</p>
+            <small style="color: #888;"><i class="far fa-clock"></i> Recebido em: ${n.date}</small>
+        </div>
+    `).join('');
+}
+
+function limparNotificacoes() {
+    localStorage.setItem('appNotificacoes', '[]');
+    renderizarNotificacoes();
+    atualizarBadgeNotificacoes();
+    Toast.fire({ icon: 'success', title: 'Caixa de entrada limpa!' });
 }
