@@ -8,6 +8,7 @@ const URL_LOGIN_DB = "https://script.google.com/macros/s/AKfycbyffqQQUSRWVVpyQyK
 
 // 👇 COLOQUE AQUI O ID DA SUA PLANILHA ONDE AS COMISSÕES SÃO SALVAS 👇
 const ID_PLANILHA_COMISSOES = "17PYbOV8CuEwghbaDiUmJXvc1mCT7tZ55iKvkQFzTeXc";
+const VAPID_PUBLIC_KEY = "BGl-80N3g3qnI_Sg_k4UeIq5WfAbpWk5enVEuA-Z2x_y_z_z_z_z_z_z_z_z_z_z_z_z_z_z_z_z_z_z_z_z_z_z_z_z_z_z_z_z_z_z"; // Chave pública gerada
 
 // Controle de Versão do App (Mude sempre que enviar atualização)
 const APP_VERSION = "1.0.7";
@@ -974,11 +975,14 @@ document.addEventListener("DOMContentLoaded", () => {
     // Adiciona Monitoramento de Rascunho na tela de Comissões
     const formComissao = document.getElementById('telaComissoes');
     if(formComissao) {
+        // Salva rascunho ao mudar de campo (rápido)
         formComissao.querySelectorAll('input, select').forEach(el => el.addEventListener('change', salvarRascunhoVenda));
+        // Salva rascunho enquanto digita (com delay para não sobrecarregar)
         formComissao.querySelectorAll('input').forEach(el => el.addEventListener('input', debounce(salvarRascunhoVenda, 1000)));
     }
 
     window.addEventListener('online', sincronizarFilaOffline);
+    sincronizarFilaOffline(); // Tenta sincronizar a fila logo na abertura do app
     setTimeout(verificarRascunhoPendente, 2000); // Dá tempo de carregar os selects de vendedora
 
     // Registra o Service Worker (Aplicativo de Celular / PWA)
@@ -1017,6 +1021,9 @@ document.addEventListener("DOMContentLoaded", () => {
             refreshing = true;
         });
     }
+
+    // Checa o status da inscrição Push ao carregar a página
+    checkPushSubscription();
 });
 
 async function carregarDashboardReal() {
@@ -1581,5 +1588,90 @@ async function compartilharReciboWhatsApp() {
         }
     } else {
         window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(textoRecibo)}`);
+    }
+}
+
+// --- LÓGICA PARA NOTIFICAÇÕES PUSH ---
+
+// Helper function para converter a chave VAPID para o formato que o navegador precisa
+function urlBase64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+    for (let i = 0; i < rawData.length; ++i) {
+        outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
+}
+
+async function subscribeUserToPush() {
+    const pushStatus = document.getElementById('pushStatus');
+    const pushButton = document.getElementById('btnHabilitarPush');
+
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+        pushStatus.innerText = 'Notificações Push não são suportadas neste navegador.';
+        pushButton.disabled = true;
+        return;
+    }
+
+    const permission = await Notification.requestPermission();
+    if (permission !== 'granted') {
+        pushStatus.innerText = 'Permissão para notificações foi negada.';
+        return;
+    }
+
+    pushButton.disabled = true;
+    pushStatus.innerText = 'Inscrevendo para receber notificações...';
+
+    try {
+        const registration = await navigator.serviceWorker.ready;
+        let subscription = await registration.pushManager.getSubscription();
+
+        if (subscription === null) {
+            const applicationServerKey = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
+            subscription = await registration.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: applicationServerKey
+            });
+        }
+
+        // PARTE 2: Enviar 'subscription' para o servidor para salvar
+        await sendSubscriptionToBackend(subscription);
+
+        pushStatus.innerText = 'Você está inscrito para receber notificações!';
+        pushButton.innerHTML = '<i class="fas fa-check-circle"></i> Inscrito';
+        Toast.fire({ icon: 'success', title: 'Notificações habilitadas!' });
+
+    } catch (error) {
+        console.error('Falha ao inscrever no Push: ', error);
+        pushStatus.innerText = 'Falha ao habilitar notificações.';
+        pushButton.disabled = false;
+    }
+}
+
+async function sendSubscriptionToBackend(subscription) {
+    // Esta função enviará a inscrição para o seu backend (Google Apps Script)
+    // Por enquanto, vamos apenas simular e exibir no console.
+    console.log("Enviando para o backend (simulação):");
+    console.log(JSON.stringify({ usuario: usuarioLogado, inscricao: subscription }));
+    // Na Parte 2, faremos o fetch real para o Apps Script aqui.
+    return Promise.resolve(); // Retorna uma promessa resolvida para a simulação
+}
+
+async function checkPushSubscription() {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+
+    const pushButton = document.getElementById('btnHabilitarPush');
+    const pushStatus = document.getElementById('pushStatus');
+    if (!pushButton || !pushStatus) return;
+
+    const registration = await navigator.serviceWorker.ready;
+    const subscription = await registration.pushManager.getSubscription();
+    
+    if (subscription) {
+        pushStatus.innerText = 'Você já está recebendo notificações.';
+        pushButton.innerHTML = '<i class="fas fa-check-circle"></i> Inscrito';
+        pushButton.disabled = true;
     }
 }
