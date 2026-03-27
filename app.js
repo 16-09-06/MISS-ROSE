@@ -5,10 +5,12 @@ const URL_SHEET_BANCO = "https://docs.google.com/spreadsheets/d/1_UIvezU3eh5HQ98
 const URL_SHEET_LOGISTICA = "https://docs.google.com/spreadsheets/d/1inVjNncz3YdWV31iEShiYjCUkWEE0fOfkTXCwRDu98k/edit?usp=sharing";
 const URL_SHEET_GERENCIAL = "https://docs.google.com/spreadsheets/d/17PYbOV8CuEwghbaDiUmJXvc1mCT7tZ55iKvkQFzTeXc/edit?usp=sharing";
 const URL_LOGIN_DB = "https://script.google.com/macros/s/AKfycbyffqQQUSRWVVpyQyKyKTC5fwyEii8RzF9fFlJflwhFupAZ-QusTzhXrGSgMFEZQRHgxA/exec";
+// 👇 COLOQUE AQUI A URL DO NOSSO NOVO SCRIPT DE PUSH (Passo 2) 👇
+const URL_PUSH_BACKEND = "https://script.google.com/macros/s/AKfycbwYIXrKAGUYam3dYYpEjHvhQA1bHDa8CYdDYE1SMcb6dewyG4XY0PR7ax_HDHFNHRHRbg/exec";
 
 // 👇 COLOQUE AQUI O ID DA SUA PLANILHA ONDE AS COMISSÕES SÃO SALVAS 👇
 const ID_PLANILHA_COMISSOES = "17PYbOV8CuEwghbaDiUmJXvc1mCT7tZ55iKvkQFzTeXc";
-const VAPID_PUBLIC_KEY = "BGl-80N3g3qnI_Sg_k4UeIq5WfAbpWk5enVEuA-Z2x_y_z_z_z_z_z_z_z_z_z_z_z_z_z_z_z_z_z_z_z_z_z_z_z_z_z_z_z_z_z_z"; // Chave pública gerada
+const VAPID_PUBLIC_KEY = "BGypw8mTc6GQyLOdsO33Qdy-Pqg4K0jj7UQ8PKZkvA-hDloY8DO1x43N0eCQsA8gPcGvRskpk8MlDl3g80WcOPE"; // Chave pública gerada no VapidKeys
 
 // Controle de Versão do App (Mude sempre que enviar atualização)
 const APP_VERSION = "1.0.7";
@@ -95,6 +97,37 @@ function setAndLockVendedora(user) {
     setTimeout(carregarDashboardReal, 1000); 
     if(!window.dashInterval) {
         window.dashInterval = setInterval(carregarDashboardReal, 60000); // Atualiza os gráficos a cada 1 min
+    }
+
+    // NOVO: Configura recursos de admin
+    setupAdminFeatures(user);
+}
+
+function setupAdminFeatures(user) {
+    const userUpper = user.toUpperCase();
+    const superAdmins = ['KAYK', 'JHONATA', 'DEBORA', 'FELIPE'];
+    const isSuperAdmin = superAdmins.includes(userUpper);
+    const isAdmin = isSuperAdmin || ['RENATA', 'CAROL'].includes(userUpper);
+
+    const painelPush = document.getElementById('painelAdminPush');
+    if (!painelPush) return;
+
+    if (isAdmin) {
+        painelPush.classList.remove('hidden');
+        const pushTargetSelect = document.getElementById('pushTarget');
+        pushTargetSelect.innerHTML = ''; // Limpa opções
+
+        if (userUpper === 'RENATA') {
+            pushTargetSelect.add(new Option('Minha Equipe (Renata)', 'equipe_renata'));
+        } else if (userUpper === 'CAROL') {
+            pushTargetSelect.add(new Option('Minha Equipe (Carol)', 'equipe_carol'));
+        } else if (isSuperAdmin) {
+            pushTargetSelect.add(new Option('Todas as Vendedoras', 'todas'));
+            pushTargetSelect.add(new Option('Equipe Renata', 'equipe_renata'));
+            pushTargetSelect.add(new Option('Equipe Carol', 'equipe_carol'));
+        }
+    } else {
+        painelPush.classList.add('hidden');
     }
 }
 
@@ -1651,12 +1684,70 @@ async function subscribeUserToPush() {
 }
 
 async function sendSubscriptionToBackend(subscription) {
-    // Esta função enviará a inscrição para o seu backend (Google Apps Script)
-    // Por enquanto, vamos apenas simular e exibir no console.
-    console.log("Enviando para o backend (simulação):");
-    console.log(JSON.stringify({ usuario: usuarioLogado, inscricao: subscription }));
-    // Na Parte 2, faremos o fetch real para o Apps Script aqui.
-    return Promise.resolve(); // Retorna uma promessa resolvida para a simulação
+    if (URL_PUSH_BACKEND.includes("COLOQUE_A_URL_DO_SEU_NOVO_BACKEND_AQUI")) {
+        console.warn("URL do Script de Push não configurada. Inscrição não foi salva no backend.");
+        return;
+    }
+
+    try {
+        const response = await fetch(URL_PUSH_BACKEND, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain' },
+            body: JSON.stringify({
+                acao: "saveSubscription",
+                subscription: {
+                    usuario: usuarioLogado,
+                    inscricao: subscription
+                }
+            })
+        });
+        const result = await response.text();
+        console.log("Resposta do backend (salvar inscrição):", result);
+    } catch (error) {
+        console.error("Erro ao enviar inscrição para o backend:", error);
+    }
+}
+
+async function enviarNotificacaoPush() {
+    const target = document.getElementById('pushTarget').value;
+    const title = document.getElementById('pushTitle').value;
+    const body = document.getElementById('pushBody').value;
+    const btn = document.querySelector('#painelAdminPush button');
+
+    if (!body) {
+        Swal.fire('Atenção', 'A mensagem não pode estar vazia.', 'warning');
+        return;
+    }
+    
+    if (URL_PUSH_BACKEND.includes("COLOQUE_A_URL_DO_SEU_NOVO_BACKEND_AQUI")) {
+        Swal.fire('Erro de Configuração', 'A URL do serviço de notificações não foi definida no app.js.', 'error');
+        return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...';
+
+    try {
+        const response = await fetch(URL_PUSH_BACKEND, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain' },
+            body: JSON.stringify({
+                acao: "sendMessage",
+                messagePayload: { target, title, body, url: "/" }
+            })
+        });
+        const result = await response.text();
+        Swal.fire('Sucesso!', result, 'success');
+        document.getElementById('pushBody').value = '';
+        document.getElementById('pushTitle').value = '';
+
+    } catch (error) {
+        Swal.fire('Erro!', 'Falha ao enviar a notificação. Verifique a conexão.', 'error');
+        console.error("Erro ao enviar notificação:", error);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-paper-plane"></i> Enviar Mensagem';
+    }
 }
 
 async function checkPushSubscription() {

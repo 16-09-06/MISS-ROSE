@@ -14,6 +14,7 @@
     <link rel="stylesheet" href="styles.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://unpkg.com/imask"></script>
+
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
@@ -462,6 +463,24 @@
         <button id="btnCheckUpdate" onclick="verificarAtualizacaoManual()" style="width: auto; padding: 10px 25px; font-size: 14px; border-radius: 20px;">
             <i class="fas fa-sync-alt"></i> Verificar Atualizações
         </button>
+    </div>
+
+    <!-- PAINEL DE ENVIO DE NOTIFICAÇÕES (SÓ PARA ADMINS) -->
+    <div id="painelAdminPush" class="result-box hidden" style="margin-top: 20px; border-color: #8e44ad;">
+        <h3 style="margin-top:0; color: #8e44ad; display: flex; align-items: center; gap: 10px;"><i class="fas fa-paper-plane"></i> Enviar Notificação Geral</h3>
+        
+        <label for="pushTarget">Enviar para:</label>
+        <select id="pushTarget">
+            <!-- Opções preenchidas via JS -->
+        </select>
+
+        <label for="pushTitle">Título da Notificação:</label>
+        <input type="text" id="pushTitle" placeholder="Ex: Novidade Importante!">
+
+        <label for="pushBody">Mensagem:</label>
+        <textarea id="pushBody" placeholder="Digite a mensagem que aparecerá no celular da vendedora..." style="height: 100px;"></textarea>
+
+        <button onclick="enviarNotificacaoPush()" style="background: #8e44ad;"><i class="fas fa-paper-plane"></i> Enviar Mensagem</button>
     </div>
 
     <div class="result-box" style="display: flex; flex-direction: column; align-items: center; text-align: center; margin-top: 20px;">
