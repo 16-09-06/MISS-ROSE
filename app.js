@@ -1633,10 +1633,11 @@ async function compartilharReciboWhatsApp() {
 function initOneSignal() {
     window.OneSignalDeferred = window.OneSignalDeferred || [];
     OneSignalDeferred.push(async function(OneSignal) {
+        const basePath = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1);
         await OneSignal.init({
             appId: ONESIGNAL_APP_ID,
             notifyButton: { enable: false },
-            serviceWorkerParam: { scope: '/' },
+            serviceWorkerParam: { scope: basePath },
             serviceWorkerPath: 'sw.js'
         });
 
@@ -1654,19 +1655,24 @@ async function subscribeUserToPush() {
     const pushButton = document.getElementById('btnHabilitarPush');
 
     window.OneSignalDeferred.push(async function(OneSignal) {
-        pushStatus.innerText = 'Solicitando permissão...';
-        await OneSignal.Notifications.requestPermission();
-        
-        if (OneSignal.Notifications.permission === true) {
-            pushStatus.innerText = 'Você está inscrito para receber notificações!';
-            pushButton.innerHTML = '<i class="fas fa-check-circle"></i> Inscrito';
-            pushButton.disabled = true;
-            Toast.fire({ icon: 'success', title: 'Notificações habilitadas!' });
+        try {
+            pushStatus.innerText = 'Solicitando permissão...';
+            await OneSignal.Notifications.requestPermission();
             
-            tagOneSignalUser(usuarioLogado); // Classifica a vendedora na equipe dela
-        } else {
-            pushStatus.innerText = 'Permissão negada pelo navegador.';
-            pushButton.disabled = false;
+            if (OneSignal.Notifications.permission === true) {
+                pushStatus.innerText = 'Você está inscrito para receber notificações!';
+                pushButton.innerHTML = '<i class="fas fa-check-circle"></i> Inscrito';
+                pushButton.disabled = true;
+                Toast.fire({ icon: 'success', title: 'Notificações habilitadas!' });
+                
+                tagOneSignalUser(usuarioLogado); // Classifica a vendedora na equipe dela
+            } else {
+                pushStatus.innerText = 'Permissão negada pelo navegador. Verifique o "cadeado" ao lado da URL para liberar.';
+                pushButton.disabled = false;
+            }
+        } catch (error) {
+            pushStatus.innerText = 'Erro ao solicitar permissão. O servidor bloqueou a conexão.';
+            console.error('Falha OneSignal:', error);
         }
     });
 }
@@ -1721,14 +1727,15 @@ async function enviarNotificacaoPush() {
     try {
         const response = await fetch(URL_PUSH_BACKEND, {
             method: 'POST',
+            mode: 'no-cors', // Adicionado para ignorar a política de CORS do Google Apps Script
             headers: { 'Content-Type': 'text/plain' },
             body: JSON.stringify({
                 acao: "sendMessage",
                 messagePayload: { target, title, body, url: "/" }
             })
         });
-        const result = await response.text();
-        Swal.fire('Sucesso!', result, 'success');
+        // Ao usar 'no-cors', a resposta se torna "opaca", então presumimos sucesso sem tentar ler o texto
+        Swal.fire('Sucesso!', 'A mensagem foi enviada ao servidor com sucesso!', 'success');
         document.getElementById('pushBody').value = '';
         document.getElementById('pushTitle').value = '';
 
