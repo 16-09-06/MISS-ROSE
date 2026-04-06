@@ -7,8 +7,10 @@ const URL_SHEET_LOGISTICA = "https://docs.google.com/spreadsheets/d/1inVjNncz3Yd
 const URL_SHEET_GERENCIAL = "https://docs.google.com/spreadsheets/d/1mNy4tXwYqFCcrLP37ts8gDsxJe0Uxjo7Ikmu38gHtB8/edit#gid=0";
 const URL_LOGIN_DB = "https://script.google.com/macros/s/AKfycbyffqQQUSRWVVpyQyKyKTC5fwyEii8RzF9fFlJflwhFupAZ-QusTzhXrGSgMFEZQRHgxA/exec";
 
-// 👇 COLOQUE A URL DO SEU NOVO SCRIPT DE PUSH AQUI 👇
-const URL_PUSH_BACKEND = "https://script.google.com/macros/s/AKfycbwYIXrKAGUYam3dYYpEjHvhQA1bHDa8CYdDYE1SMcb6dewyG4XY0PR7ax_HDHFNHRHRbg/exec";
+// ✅ URL do Servidor Flask (Python)
+// Como o GitHub Pages é HTTPS, o link da sua API também DEVE SER HTTPS!
+// Cole aqui a URL do seu servidor na nuvem (ex: Render, Railway) quando for disponibilizar.
+const URL_FLASK = "COLOQUE_SUA_URL_HTTPS_AQUI";
 
 // 👇 COLOQUE SUA CHAVE PÚBLICA VAPID AQUI 👇
 const VAPID_PUBLIC_KEY = "BCGB4GBtvMovAqlJkoVUIWGc2RP-8J1DzE7cZZ1Qo9YRDfKYkKUUa781Vo0tdOAeunSvWFRK9E9S33YoQp6rBBs";
@@ -1937,66 +1939,73 @@ async function compartilharReciboWhatsApp() {
 async function subscribeUserToPush() {
     const pushStatus = document.getElementById('pushStatus');
     const pushButton = document.getElementById('btnHabilitarPush');
-
+ 
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
         pushStatus.innerText = 'Push notifications não suportadas neste navegador.';
         return;
     }
-
+ 
     try {
         pushStatus.innerText = 'Solicitando permissão...';
         const permission = await Notification.requestPermission();
-            
+ 
         if (permission === 'granted') {
             const registration = await navigator.serviceWorker.ready;
-                
-            // Pega a inscrição gerada unicamente para esse celular
+ 
+            // Pega (ou reutiliza) a inscrição gerada para esse dispositivo
             const subscription = await registration.pushManager.subscribe({
                 userVisibleOnly: true,
                 applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
             });
-
+ 
             pushStatus.innerText = 'Você está inscrito para receber notificações!';
             pushButton.innerHTML = '<i class="fas fa-check-circle"></i> Inscrito';
             pushButton.disabled = true;
             Toast.fire({ icon: 'success', title: 'Notificações habilitadas!' });
-                
-            // Salva essa inscrição lá na planilha do Apps Script
-            salvarInscricaoNoBackend(subscription, usuarioLogado);
-
+ 
+            // ✅ Salva a inscrição diretamente no Flask (não mais no Apps Script)
+            await salvarInscricaoNoBackend(subscription, usuarioLogado);
+ 
         } else {
             pushStatus.innerText = 'Permissão negada pelo navegador.';
             pushButton.disabled = false;
         }
     } catch (error) {
-        pushStatus.innerText = 'Erro ao se inscrever. O navegador ou servidor bloqueou a conexão.';
+        pushStatus.innerText = 'Erro ao se inscrever. Verifique se o app está em HTTPS.';
         console.error('Falha Push Nativo:', error);
     }
 }
-
+ 
 async function salvarInscricaoNoBackend(subscription, user) {
+    // ✅ Chamada direta ao Flask com modo padrão (não 'no-cors')
+    //    O Flask tem CORS habilitado, então isso funciona corretamente.
     try {
-        await fetch(URL_PUSH_BACKEND, {
+        const response = await fetch(`${URL_FLASK}/salvar-inscricao`, {
             method: 'POST',
-            mode: 'no-cors',
-            headers: { 'Content-Type': 'text/plain' },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                acao: "salvarInscricao",
                 nome: user,
                 subscription: subscription
             })
         });
-    } catch(e) {
-        console.error("Erro ao salvar inscrição", e);
+ 
+        if (!response.ok) {
+            const err = await response.json();
+            console.error("Servidor recusou a inscrição:", err);
+        } else {
+            console.log("Inscrição salva com sucesso no servidor.");
+        }
+    } catch (e) {
+        console.error("Erro de conexão ao salvar inscrição:", e);
     }
 }
-
+ 
 async function checkPushSubscription() {
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
-    
+ 
     const registration = await navigator.serviceWorker.ready;
     const subscription = await registration.pushManager.getSubscription();
-        
+ 
     if (subscription) {
         const pushButton = document.getElementById('btnHabilitarPush');
         const pushStatus = document.getElementById('pushStatus');
@@ -2005,66 +2014,79 @@ async function checkPushSubscription() {
             pushButton.innerHTML = '<i class="fas fa-check-circle"></i> Inscrito';
             pushButton.disabled = true;
         }
+        // ✅ Re-registra silenciosamente caso o servidor tenha reiniciado
+        //    (evita perder inscrições após restart do Flask)
+        salvarInscricaoNoBackend(subscription, usuarioLogado);
     }
 }
-
+ 
 async function enviarNotificacaoPush() {
     const target = document.getElementById('pushTarget').value;
-    const title = document.getElementById('pushTitle').value;
-    const body = document.getElementById('pushBody').value;
-    const btn = document.querySelector('#painelAdminPush button');
-
+    const title  = document.getElementById('pushTitle').value;
+    const body   = document.getElementById('pushBody').value;
+    const btn    = document.querySelector('#painelAdminPush button');
+ 
     if (!body) {
         Swal.fire('Atenção', 'A mensagem não pode estar vazia.', 'warning');
         return;
     }
-
+ 
     btn.disabled = true;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...';
-
+ 
     try {
-        const response = await fetch(URL_PUSH_BACKEND, {
+        // ✅ Chamada direta ao Flask, com leitura real da resposta
+        const response = await fetch(`${URL_FLASK}/enviar-push`, {
             method: 'POST',
-            mode: 'no-cors', // Adicionado para ignorar a política de CORS do Google Apps Script
-            headers: { 'Content-Type': 'text/plain' },
-            body: JSON.stringify({
-                acao: "sendMessage",
-                messagePayload: { target, title, body, url: "/", ttl: 86400 } // TTL de 86400 segundos (24h)
-            })
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ target, title, body, url: '/' })
         });
-        // Ao usar 'no-cors', a resposta se torna "opaca", então presumimos sucesso sem tentar ler o texto
-        Swal.fire('Sucesso!', 'A mensagem foi enviada ao servidor com sucesso!', 'success');
-        document.getElementById('pushBody').value = '';
+ 
+        const resultado = await response.json();
+ 
+        if (response.ok) {
+            const enviados = resultado.resultado?.enviados?.length || 0;
+            const falhas   = resultado.resultado?.falhas?.length || 0;
+            Swal.fire(
+                'Mensagem Enviada!',
+                `Entregue para ${enviados} dispositivo(s).${falhas > 0 ? ` ${falhas} falha(s).` : ''}`,
+                enviados > 0 ? 'success' : 'warning'
+            );
+        } else {
+            Swal.fire('Aviso', resultado.detalhe || 'Resposta inesperada do servidor.', 'warning');
+        }
+ 
+        document.getElementById('pushBody').value  = '';
         document.getElementById('pushTitle').value = '';
-
+ 
     } catch (error) {
-        Swal.fire('Erro!', 'Falha ao enviar a notificação. Verifique a conexão.', 'error');
+        Swal.fire('Erro de Conexão', 'Não foi possível contactar o servidor de notificações. Verifique se o Flask está rodando.', 'error');
         console.error("Erro ao enviar notificação:", error);
     } finally {
         btn.disabled = false;
         btn.innerHTML = '<i class="fas fa-paper-plane"></i> Enviar Mensagem';
     }
 }
-
+ 
 // --- SISTEMA DE CAIXA DE MENSAGENS (IN-APP) ---
-
+ 
 function salvarNotificacaoLocal(payload) {
     let notifs = JSON.parse(localStorage.getItem('appNotificacoes') || '[]');
     notifs.unshift({
         title: payload.title || "Aviso Miss Rôse",
-        body: payload.body || "Você tem uma nova mensagem.",
-        date: new Date().toLocaleString('pt-BR'),
-        lida: false
+        body:  payload.body  || "Você tem uma nova mensagem.",
+        date:  new Date().toLocaleString('pt-BR'),
+        lida:  false
     });
     localStorage.setItem('appNotificacoes', JSON.stringify(notifs));
     atualizarBadgeNotificacoes();
 }
-
+ 
 function atualizarBadgeNotificacoes() {
     let notifs = JSON.parse(localStorage.getItem('appNotificacoes') || '[]');
     let naoLidas = notifs.filter(n => !n.lida).length;
     const badge = document.getElementById('badgeNotificacao');
-    
+ 
     if (badge) {
         if (naoLidas > 0) {
             badge.innerText = naoLidas > 9 ? "9+" : naoLidas;
@@ -2074,21 +2096,20 @@ function atualizarBadgeNotificacoes() {
         }
     }
 }
-
+ 
 function abrirPainelNotificacoes() {
     document.getElementById('modalNotificacoes').classList.remove('hidden');
     renderizarNotificacoes();
 }
-
+ 
 function fecharPainelNotificacoes() {
     document.getElementById('modalNotificacoes').classList.add('hidden');
-    // Marca todas como lidas ao fechar o painel
     let notifs = JSON.parse(localStorage.getItem('appNotificacoes') || '[]');
     notifs.forEach(n => n.lida = true);
     localStorage.setItem('appNotificacoes', JSON.stringify(notifs));
     atualizarBadgeNotificacoes();
 }
-
+ 
 function renderizarNotificacoes() {
     let notifs = JSON.parse(localStorage.getItem('appNotificacoes') || '[]');
     const container = document.getElementById('listaNotificacoesPainel');
@@ -2104,10 +2125,11 @@ function renderizarNotificacoes() {
         </div>
     `).join('');
 }
-
+ 
 function limparNotificacoes() {
     localStorage.setItem('appNotificacoes', '[]');
     renderizarNotificacoes();
     atualizarBadgeNotificacoes();
     Toast.fire({ icon: 'success', title: 'Caixa de entrada limpa!' });
 }
+ 
