@@ -19,10 +19,21 @@ VAPID_CLAIMS = {
     "sub": "mailto:faturamento@missrosebra.com"
 }
  
-# ✅ Banco de inscrições em memória (dicionário: nome -> subscription_info)
-# Em produção, substitua por um banco de dados como SQLite ou PostgreSQL.
-# Estrutura: { "NOME_USUARIO": { ...subscription_object... }, ... }
-subscriptions_db = {}
+# ✅ Banco de inscrições usando um arquivo JSON simples para não perder
+# os dados quando o servidor reiniciar (Excelente para o PythonAnywhere).
+DB_FILE = "inscricoes.json"
+
+def carregar_banco():
+    if os.path.exists(DB_FILE):
+        with open(DB_FILE, "r") as f:
+            return json.load(f)
+    return {}
+
+def salvar_banco(db):
+    with open(DB_FILE, "w") as f:
+        json.dump(db, f)
+
+subscriptions_db = carregar_banco()
  
 # Mapeamento de equipes — espelha a lógica do app.js
 EQUIPES = {

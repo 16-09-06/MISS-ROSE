@@ -10,7 +10,7 @@ const URL_LOGIN_DB = "https://script.google.com/macros/s/AKfycbyffqQQUSRWVVpyQyK
 // ✅ URL do Servidor Flask (Python)
 // Como o GitHub Pages é HTTPS, o link da sua API também DEVE SER HTTPS!
 // Cole aqui a URL do seu servidor na nuvem (ex: Render, Railway) quando for disponibilizar.
-const URL_FLASK = "COLOQUE_SUA_URL_HTTPS_AQUI";
+const URL_FLASK = "https://kayklima.pythonanywhere.com";
 
 // 👇 COLOQUE SUA CHAVE PÚBLICA VAPID AQUI 👇
 const VAPID_PUBLIC_KEY = "BCGB4GBtvMovAqlJkoVUIWGc2RP-8J1DzE7cZZ1Qo9YRDfKYkKUUa781Vo0tdOAeunSvWFRK9E9S33YoQp6rBBs";
