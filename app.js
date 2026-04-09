@@ -1,6 +1,6 @@
 // URLs das suas Planilhas
 const URL_COMISSOES = "https://script.google.com/macros/s/AKfycbxHovQbCHgl6L7AVOlz4bl1ih1Ncx1XgNgDW73ANmN21Z1oPpnyTIMY2tKj9NZdEqkb/exec";
-const URL_METAS_DB = "https://script.google.com/macros/s/AKfycbwN7dr9R5O6CFtX7l1AYUc_oyQH18gDg8OxJWrld_0mEbbbbx3bPAW_m4yXBOV6V8EA/exec"; // <-- NOVO!
+const URL_METAS_DB = "https://script.google.com/macros/s/AKfycbz1aV-T0mhuQHm8obX13aFQn8uxhAQirQeS4nPF90nzCmHirCgOujOguXgxlW7sul4W/exec";
 const URL_FORNECEDORES = "https://script.google.com/macros/s/AKfycbxpMXA3xWANJ8ivdoj_3ZbUV0nCXDWvJ7Ja5E6bTAdVquSImH_gDfQ9pabnwvoaZK5b/exec";
 const URL_SHEET_BANCO = "https://docs.google.com/spreadsheets/d/1_UIvezU3eh5HQ98ttIXsViCCsY2opGwNOfZbv4SVFfc/edit?usp=sharing";
 const URL_SHEET_LOGISTICA = "https://docs.google.com/spreadsheets/d/1inVjNncz3YdWV31iEShiYjCUkWEE0fOfkTXCwRDu98k/edit?usp=sharing";
@@ -18,6 +18,9 @@ const VAPID_PUBLIC_KEY = "BCGB4GBtvMovAqlJkoVUIWGc2RP-8J1DzE7cZZ1Qo9YRDfKYkKUUa7
 // 👇 COLOQUE AQUI O ID DA SUA PLANILHA ONDE AS COMISSÕES SÃO SALVAS 👇
 const ID_PLANILHA_COMISSOES = "1mNy4tXwYqFCcrLP37ts8gDsxJe0Uxjo7Ikmu38gHtB8";
 
+// 👇 COLOQUE AQUI O ID DA SUA NOVA PLANILHA EXCLUSIVA PARA METAS 👇
+const ID_PLANILHA_METAS = "13loIiCcoWr2x-S8i1nD-EmCoUsNLmj3JoXNxW1cHr24";
+
 // Controle de Versão do App (Mude sempre que enviar atualização)
 const APP_VERSION = "1.1.0";
 
@@ -34,6 +37,7 @@ let chartEmpresas = null;
 let chartEstados = null;
 let vendasGlobaisDash = []; // Memória para o Mini-CRM
 let metasDaEquipe = {}; // Armazena as metas carregadas
+let vendasMetas = { equipe: 0, porVendedora: {} }; // Armazena o progresso real das vendas para as metas
 
 // Configuração Global do Toast (Notificações não-intrusivas)
 const Toast = Swal.mixin({
@@ -131,11 +135,13 @@ function setAndLockVendedora(user) {
 function setupAdminFeatures(user) {
     const userUpper = user.toUpperCase();
     const superAdmins = ['KAYK', 'JHONATA', 'DEBORA', 'FELIPE'];
+    const equipeRenata = ['RENATA', 'HOZANA', 'ISRAEL', 'ROSANGELA', 'SARA', 'VINICIUS'];
+    const equipeCarol  = ['CAROL', 'ALICE', 'CHARLENE', 'HEMILLY', 'MICHELLE'];
     const isSuperAdmin = superAdmins.includes(userUpper);
     const isAdmin = isSuperAdmin || ['RENATA', 'CAROL'].includes(userUpper);
 
     const painelPush = document.getElementById('painelAdminPush');
-    const painelMetas = document.getElementById('painelAdminMetas');
+    const painelMetas = document.getElementById('adminMetasContainer');
 
     if (isAdmin) {
         if (painelPush) painelPush.classList.remove('hidden');
@@ -152,6 +158,13 @@ function setupAdminFeatures(user) {
             pushTargetSelect.add(new Option('Todas as Vendedoras', 'todas'));
             pushTargetSelect.add(new Option('Equipe Renata', 'equipe_renata'));
             pushTargetSelect.add(new Option('Equipe Carol', 'equipe_carol'));
+        }
+        
+        const selectVendedoraMeta = document.getElementById('selectVendedoraMeta');
+        if (selectVendedoraMeta) {
+            selectVendedoraMeta.innerHTML = '<option value="">Selecione uma vendedora...</option>';
+            let equipeGerir = isSuperAdmin ? [...new Set([...equipeRenata, ...equipeCarol])].sort() : (userUpper === 'RENATA' ? equipeRenata : equipeCarol);
+            equipeGerir.forEach(v => selectVendedoraMeta.add(new Option(v, v)));
         }
     } else {
         if (painelPush) painelPush.classList.add('hidden');
@@ -361,23 +374,27 @@ function alternarTela(tela) {
     const telaFor = document.getElementById('telaFornecedores');
     const telaPlan = document.getElementById('telaPlanilhas');
     const telaConfig = document.getElementById('telaConfig');
+    const telaMetas = document.getElementById('telaMetas');
     const navDash = document.getElementById('navDashboard');
     const navCom = document.getElementById('navComissoes');
     const navFor = document.getElementById('navFornecedores');
     const navPlan = document.getElementById('navPlanilhas');
     const navConfig = document.getElementById('navConfig');
+    const navMetas = document.getElementById('navMetas');
 
     if (telaDash) telaDash.classList.add('hidden');
     telaCom.classList.add('hidden');
     telaFor.classList.add('hidden');
     telaPlan.classList.add('hidden');
     if (telaConfig) telaConfig.classList.add('hidden');
+    if (telaMetas) telaMetas.classList.add('hidden');
     
     if (navDash) navDash.classList.remove('active');
     navCom.classList.remove('active');
     navFor.classList.remove('active');
     navPlan.classList.remove('active');
     if (navConfig) navConfig.classList.remove('active');
+    if (navMetas) navMetas.classList.remove('active');
 
     if (tela === 'dashboard') {
         if (telaDash) telaDash.classList.remove('hidden');
@@ -399,6 +416,10 @@ function alternarTela(tela) {
     } else if (tela === 'config') {
         if (telaConfig) telaConfig.classList.remove('hidden');
         if (navConfig) navConfig.classList.add('active');
+    } else if (tela === 'metas') {
+        if (telaMetas) telaMetas.classList.remove('hidden');
+        if (navMetas) navMetas.classList.add('active');
+        atualizarTelaMetas();
     }
 }
 
@@ -618,6 +639,17 @@ async function salvarComissao() {
         totalVendidoSessao += totalNfVal;
         totalComissaoSessao += valorComissao;
         
+        // NOVO: Adiciona a venda na memória de metas para atualizar as barras instantaneamente
+        if (!vendasMetas.porVendedora[vendedora]) {
+            vendasMetas.porVendedora[vendedora] = { diaria: 0, semanal: 0, mensal: 0 };
+        }
+        vendasMetas.porVendedora[vendedora].diaria += totalNfVal;
+        vendasMetas.porVendedora[vendedora].semanal += totalNfVal;
+        vendasMetas.porVendedora[vendedora].mensal += totalNfVal;
+        vendasMetas.equipe += totalNfVal;
+        atualizarBarraDeProgresso();
+        atualizarTelaMetas();
+
         // Atualiza os novos Cards de KPI
         if (document.getElementById('kpiFaturamento')) {
             document.getElementById('kpiFaturamento').innerText = totalVendidoSessao.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -1229,6 +1261,13 @@ async function carregarDashboardReal() {
         let comissaoLiquida = 0;
         let clientesMemoria = new Set(); // Memória para o Autocompletar
         
+        let hoje = new Date();
+        let inicioHoje = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
+        let inicioSemana = new Date(inicioHoje);
+        inicioSemana.setDate(inicioHoje.getDate() - inicioHoje.getDay());
+        let inicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+        vendasMetas = { equipe: 0, porVendedora: {} };
+
         // Variáveis para Comparação de Mês Anterior
         const isAnoInteiro = mesAtual === "ANO INTEIRO";
         const mesesRef = ['JANEIRO', 'FEVEREIRO', 'MARÇO', 'ABRIL', 'MAIO', 'JUNHO', 'JULHO', 'AGOSTO', 'SETEMBRO', 'OUTUBRO', 'NOVEMBRO', 'DEZEMBRO'];
@@ -1281,9 +1320,28 @@ async function carregarDashboardReal() {
             let rowCli = row.c[colCli] && row.c[colCli].v ? String(row.c[colCli].v).trim() : "";
             if (rowCli && rowCli !== "N/A") clientesMemoria.add(rowCli);
 
+            let rawTotalGeral = row.c[colTotal] ? row.c[colTotal].v : 0;
+            let valTotalGeral = typeof rawTotalGeral === 'number' ? rawTotalGeral : parseFloat(String(rawTotalGeral).replace(',', '.')) || 0;
+
+            if (rowDate && valTotalGeral > 0) {
+                let isEquipeValid = isSuperAdmin || (userLogadoUpper === 'RENATA' && equipeRenata.includes(rowVend)) || (userLogadoUpper === 'CAROL' && equipeCarol.includes(rowVend)) || rowVend === userLogadoUpper;
+                
+                if (!vendasMetas.porVendedora[rowVend]) vendasMetas.porVendedora[rowVend] = { diaria: 0, semanal: 0, mensal: 0 };
+                
+                // Meta global soma o faturamento de TODAS as vendas válidas do sistema
+                if (rowDate >= inicioMes) {
+                    vendasMetas.equipe += valTotalGeral;
+                }
+
+                if (isEquipeValid) {
+                    if (rowDate >= inicioMes) { vendasMetas.porVendedora[rowVend].mensal += valTotalGeral; }
+                    if (rowDate >= inicioSemana) { vendasMetas.porVendedora[rowVend].semanal += valTotalGeral; }
+                    if (rowDate >= inicioHoje) { vendasMetas.porVendedora[rowVend].diaria += valTotalGeral; }
+                }
+            }
+
             if (isDateValid && isVendaValida) {
-                let rawTotal = row.c[colTotal] ? row.c[colTotal].v : 0;
-                let valTotal = typeof rawTotal === 'number' ? rawTotal : parseFloat(String(rawTotal).replace(',', '.')) || 0;
+                let valTotal = valTotalGeral;
                 let rawCom = row.c[colComissao] ? row.c[colComissao].v : 0;
                 let valComissao = typeof rawCom === 'number' ? rawCom : parseFloat(String(rawCom).replace(',', '.')) || 0;
                 
@@ -1344,6 +1402,7 @@ async function carregarDashboardReal() {
         // Envia os dados para renderizar os gráficos E a tabela
         renderizarDashAvancado(data.table.rows, mesAtual, anoAtual, colVend, colTotal, 0, colCli, vendedoraLogada, valInicio, valFim, fVend, colComissao); 
         atualizarBarraDeProgresso(); // Atualiza a barra de metas com o faturamento calculado
+        atualizarTelaMetas();
     };
 
     const script = document.createElement('script');
@@ -1355,6 +1414,7 @@ async function carregarDashboardReal() {
         console.warn("Erro ao puxar dados do Dashboard.");
         if (!chartMensal) renderizarDashAvancado([], mesAtual, anoAtual, 17, 12, 0, 5, vendedoraLogada, valInicio, valFim, fVend, 26);
         atualizarBarraDeProgresso();
+        atualizarTelaMetas();
     };
     document.body.appendChild(script);
 }
@@ -1673,15 +1733,15 @@ function carregarEMostrarMetas() {
     // problemas de CORS que o método anterior (fetch direto) causava.
     // O App Script (URL_METAS_DB) ainda é usado para SALVAR as metas.
 
-    if (!ID_PLANILHA_COMISSOES || ID_PLANILHA_COMISSOES.includes("COLOQUE_AQUI")) {
-        console.warn("O ID da planilha de comissões é necessário para carregar as metas.");
+    if (!ID_PLANILHA_METAS || ID_PLANILHA_METAS.includes("COLOQUE_AQUI")) {
+        console.warn("O ID da planilha de metas é necessário para carregar as metas.");
         return;
     }
 
     const sheetName = "Metas";
-    const query = "SELECT A, D"; // Coluna A: Vendedora, Coluna D: MetaMensal
+    const query = "SELECT *"; // Puxa tudo para evitar erro se a planilha não tiver todas as colunas
 
-    const url = `https://docs.google.com/spreadsheets/d/${ID_PLANILHA_COMISSOES}/gviz/tq?tqx=out:json;responseHandler:callbackMetas&sheet=${sheetName}&tq=${encodeURIComponent(query)}&nocache=${new Date().getTime()}`;
+    const url = `https://docs.google.com/spreadsheets/d/${ID_PLANILHA_METAS}/gviz/tq?tqx=out:json;responseHandler:callbackMetas&headers=1&sheet=${sheetName}&tq=${encodeURIComponent(query)}&nocache=${new Date().getTime()}`;
 
     window.callbackMetas = (data) => {
         document.getElementById('scriptGvizMetas')?.remove();
@@ -1700,8 +1760,10 @@ function carregarEMostrarMetas() {
             data.table.rows.forEach(row => {
                 if (row.c && row.c[0] && row.c[0].v) {
                     const vendedora = String(row.c[0].v).toUpperCase();
-                    const metaMensal = row.c[1] ? (row.c[1].v || 0) : 0;
-                    newMetas[vendedora] = { mensal: metaMensal, diaria: 0, semanal: 0 };
+                    const diaria = row.c[1] ? (row.c[1].v || 0) : 0;
+                    const semanal = row.c[2] ? (row.c[2].v || 0) : 0;
+                    const mensal = row.c[3] ? (row.c[3].v || 0) : 0;
+                    newMetas[vendedora] = { diaria, semanal, mensal };
                 }
             });
         }
@@ -1709,7 +1771,7 @@ function carregarEMostrarMetas() {
 
         // Após carregar as metas, atualizamos a UI
         atualizarBarraDeProgresso();
-        renderizarPainelMetas(); // Popula o painel de admin se visível
+        atualizarTelaMetas();
     };
 
     const script = document.createElement('script');
@@ -1724,18 +1786,43 @@ function carregarEMostrarMetas() {
 }
 
 function atualizarBarraDeProgresso() {
-    const vendedoraLogada = (usuarioLogado || "").toUpperCase();
-    if (!vendedoraLogada) return;
+    let vendedoraLogada = (usuarioLogado || "").toUpperCase();
+    let isEquipe = false;
+    
+    // Respeitar o filtro de vendedora do dashboard (se visível)
+    const filtroVendDash = document.getElementById('filtroVendedoraDash');
+    if (filtroVendDash && filtroVendDash.style.display !== 'none') {
+        if (filtroVendDash.value === 'TODAS') {
+            isEquipe = true;
+        } else {
+            vendedoraLogada = filtroVendDash.value;
+        }
+    }
 
-    const metaInfo = metasDaEquipe[vendedoraLogada];
-    const metaMensal = metaInfo ? metaInfo.mensal : 0;
+    if (!vendedoraLogada && !isEquipe) return;
 
     const container = document.getElementById('goalProgressContainer');
     if (!container) return;
 
+    let metaMensal = 0;
+    let faturamentoAtual = 0;
+    let tituloSpan = container.querySelector('h3 span:first-child');
+
+    if (isEquipe) {
+        const metaInfo = metasDaEquipe["EQUIPE_GERAL"];
+        metaMensal = metaInfo ? metaInfo.mensal : 0;
+        faturamentoAtual = vendasMetas.equipe || 0;
+        if (tituloSpan) tituloSpan.innerText = '🎯 Meta Geral da Equipe';
+    } else {
+        const metaInfo = metasDaEquipe[vendedoraLogada];
+        metaMensal = metaInfo ? metaInfo.mensal : 0;
+        const minhasVendas = vendasMetas.porVendedora[vendedoraLogada] || { mensal: 0 };
+        faturamentoAtual = minhasVendas.mensal; 
+        if (tituloSpan) tituloSpan.innerText = '🎯 Meta do Mês';
+    }
+
     if (metaMensal > 0) {
         container.classList.remove('hidden');
-        const faturamentoAtual = totalVendidoSessao; // Usamos a variável global já calculada pelo dashboard
 
         const porcentagem = Math.min((faturamentoAtual / metaMensal) * 100, 100);
 
@@ -1759,49 +1846,115 @@ function atualizarBarraDeProgresso() {
     }
 }
 
-function renderizarPainelMetas() {
-    const userUpper = (usuarioLogado || "").toUpperCase();
-    const isAdmin = ['RENATA', 'CAROL', 'KAYK', 'JHONATA', 'DEBORA', 'FELIPE'].includes(userUpper);
-    if (!isAdmin) return;
-
-    const container = document.getElementById('listaGerenciamentoMetas');
-    if (!container) return;
-
-    const equipeRenata = ['RENATA', 'HOZANA', 'ISRAEL', 'ROSANGELA', 'SARA', 'VINICIUS'];
-    const equipeCarol = ['CAROL', 'ALICE', 'CHARLENE', 'HEMILLY', 'MICHELLE'];
-    const superAdmins = ['KAYK', 'JHONATA', 'DEBORA', 'FELIPE'];
-
-    let equipeParaGerenciar = [];
-    if (superAdmins.includes(userUpper)) {
-        equipeParaGerenciar = [...new Set([...equipeRenata, ...equipeCarol])].sort();
-    } else if (userUpper === 'RENATA') {
-        equipeParaGerenciar = equipeRenata;
-    } else if (userUpper === 'CAROL') {
-        equipeParaGerenciar = equipeCarol;
+function atualizarTelaMetas() {
+    try {
+        const userUpper = (usuarioLogado || "").toUpperCase();
+        if (!userUpper) return;
+        
+        let vendedoraAlvo = userUpper;
+        const selectAdmin = document.getElementById('selectVendedoraMeta');
+        const adminMetasContainer = document.getElementById('adminMetasContainer');
+        
+        // Se a gerente selecionou alguém, muda as barras principais para focar nela
+        if (selectAdmin && selectAdmin.value && adminMetasContainer && !adminMetasContainer.classList.contains('hidden')) {
+            vendedoraAlvo = selectAdmin.value;
+            const h3 = document.querySelector('#minhasMetasContainer h3');
+            if (h3) h3.innerText = 'Metas de: ' + vendedoraAlvo;
+        } else {
+            const h3 = document.querySelector('#minhasMetasContainer h3');
+            if (h3) h3.innerText = 'Minhas Metas';
+        }
+        
+        const minhasMetas = metasDaEquipe[vendedoraAlvo] || { diaria: 0, semanal: 0, mensal: 0 };
+        const minhasVendas = (vendasMetas && vendasMetas.porVendedora && vendasMetas.porVendedora[vendedoraAlvo]) ? vendasMetas.porVendedora[vendedoraAlvo] : { diaria: 0, semanal: 0, mensal: 0 };
+        
+        atualizarBarraUI('progMetaDiaria', 'valMetaDiaria', minhasVendas.diaria, minhasMetas.diaria);
+        atualizarBarraUI('progMetaSemanal', 'valMetaSemanal', minhasVendas.semanal, minhasMetas.semanal);
+        atualizarBarraUI('progMetaMensal', 'valMetaMensal', minhasVendas.mensal, minhasMetas.mensal);
+        
+        const metaEq = metasDaEquipe["EQUIPE_GERAL"] ? metasDaEquipe["EQUIPE_GERAL"].mensal : 0;
+        const vendasEq = vendasMetas ? vendasMetas.equipe : 0;
+        atualizarBarraUI('progMetaEquipe', 'valMetaEquipe', vendasEq, metaEq);
+        
+        const adminContainer = document.getElementById('listaDesempenhoEquipe');
+        if (adminContainer && adminMetasContainer && !adminMetasContainer.classList.contains('hidden')) {
+            let html = '';
+            if (selectAdmin && selectAdmin.options) {
+                for (let i = 1; i < selectAdmin.options.length; i++) {
+                    let vend = selectAdmin.options[i].value;
+                    let m = metasDaEquipe[vend] || { mensal: 0 };
+                    let v = (vendasMetas && vendasMetas.porVendedora && vendasMetas.porVendedora[vend]) ? vendasMetas.porVendedora[vend] : { mensal: 0 };
+                    
+                    let safeMetaMensal = Number(m.mensal) || 0;
+                    let safeVendMensal = Number(v.mensal) || 0;
+                    let pct = safeMetaMensal > 0 ? Math.min((safeVendMensal / safeMetaMensal) * 100, 100).toFixed(1) : 0;
+                    
+                    html += `
+                        <div style="margin-bottom: 15px;">
+                            <div style="display: flex; justify-content: space-between; font-size: 13px; font-weight: bold; margin-bottom: 5px;">
+                                <span>${vend}</span>
+                                <span>${safeVendMensal.toLocaleString('pt-BR', {style:'currency', currency:'BRL'})} / ${safeMetaMensal.toLocaleString('pt-BR', {style:'currency', currency:'BRL'})}</span>
+                            </div>
+                            <div class="progress-bar-background" style="height: 15px;">
+                                <div class="progress-bar-foreground" style="width: ${pct}%; background: ${pct >= 100 ? '#28a745' : '#3498db'}; font-size: 10px;">${pct}%</div>
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+            adminContainer.innerHTML = html || '<p>Nenhum dado encontrado.</p>';
+        }
+    } catch(e) {
+        console.error("Erro interno ao atualizar Tela de Metas:", e);
     }
-
-    let html = '';
-    equipeParaGerenciar.forEach(vendedora => {
-        const metaAtual = metasDaEquipe[vendedora.toUpperCase()] ? metasDaEquipe[vendedora.toUpperCase()].mensal : 0;
-        html += `
-            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
-                <label for="meta-${vendedora}" style="flex: 1; margin: 0;">${vendedora}:</label>
-                <input type="number" id="meta-${vendedora}" class="meta-input" data-vendedora="${vendedora}" value="${metaAtual}" placeholder="R$ 0" style="flex: 2; margin: 0;">
-            </div>
-        `;
-    });
-    container.innerHTML = html || '<p>Nenhuma vendedora na sua equipe.</p>';
 }
 
-async function salvarMetasEquipe() {
-    const inputs = document.querySelectorAll('.meta-input');
-    const metasParaSalvar = {};
+function atualizarBarraUI(idProg, idVal, atual, meta) {
+    try {
+        const elProg = document.getElementById(idProg);
+        const elVal = document.getElementById(idVal);
+        if (!elProg || !elVal) return;
+        
+        const safeAtual = Number(atual) || 0;
+        const safeMeta = Number(meta) || 0;
+        
+        elVal.innerText = `${safeAtual.toLocaleString('pt-BR', {style:'currency', currency:'BRL'})} / ${safeMeta.toLocaleString('pt-BR', {style:'currency', currency:'BRL'})}`;
+        let pct = safeMeta > 0 ? Math.min((safeAtual / safeMeta) * 100, 100) : 0;
+        elProg.style.width = `${pct}%`;
+        elProg.innerText = `${pct.toFixed(1)}%`;
+        elProg.style.background = (pct >= 100 && safeMeta > 0) ? '#28a745' : '';
+    } catch(e) {
+        console.error("Erro ao desenhar barra de metas:", e);
+    }
+}
 
-    inputs.forEach(input => {
-        const vendedora = input.dataset.vendedora;
-        const valor = parseFloat(input.value) || 0;
-        metasParaSalvar[vendedora] = valor;
-    });
+function carregarMetaFormulario() {
+    const vendedora = document.getElementById('selectVendedoraMeta').value;
+    if (!vendedora) {
+        document.getElementById('inputMetaDiaria').value = '';
+        document.getElementById('inputMetaSemanal').value = '';
+        document.getElementById('inputMetaMensal').value = '';
+        atualizarTelaMetas();
+        return;
+    }
+    const m = metasDaEquipe[vendedora] || { diaria: 0, semanal: 0, mensal: 0 };
+    document.getElementById('inputMetaDiaria').value = m.diaria || '';
+    document.getElementById('inputMetaSemanal').value = m.semanal || '';
+    document.getElementById('inputMetaMensal').value = m.mensal || '';
+    const mEq = metasDaEquipe["EQUIPE_GERAL"] || { mensal: 0 };
+    document.getElementById('inputMetaEquipe').value = mEq.mensal || '';
+    
+    atualizarTelaMetas(); // Força a atualização do visual ao trocar no campo
+}
+
+async function salvarMetasIndividuais() {
+    const vendedora = document.getElementById('selectVendedoraMeta').value;
+    if(!vendedora) { Swal.fire('Atenção', 'Selecione uma vendedora!', 'warning'); return; }
+
+    const diaria = parseFloat(document.getElementById('inputMetaDiaria').value) || 0;
+    const semanal = parseFloat(document.getElementById('inputMetaSemanal').value) || 0;
+    const mensal = parseFloat(document.getElementById('inputMetaMensal').value) || 0;
+    const equipe = parseFloat(document.getElementById('inputMetaEquipe').value) || 0;
 
     Swal.fire({ title: 'Salvando...', html: 'Atualizando metas na planilha...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
 
@@ -1810,12 +1963,33 @@ async function salvarMetasEquipe() {
             method: 'POST',
             mode: 'no-cors',
             headers: { 'Content-Type': 'text/plain' },
-            body: JSON.stringify({ acao: "salvarMetas", metas: metasParaSalvar })
+            body: JSON.stringify({ 
+                acao: "salvarMetasAvancado", 
+                vendedora: vendedora, 
+                diaria: diaria, 
+                semanal: semanal, 
+                mensal: mensal, 
+                equipe: equipe 
+            })
         });
-        Swal.fire('Sucesso!', 'Metas salvas com sucesso!', 'success');
-        setTimeout(carregarEMostrarMetas, 1500); // Dá um tempo para a planilha processar antes de recarregar
+        
+        // Ocultamos a verificação de response.text() pois o 'no-cors' torna a resposta opaca e 
+        // faria o sistema pensar falsamente que ocorreu um erro. Assumimos sucesso.
+        
+        if(!metasDaEquipe[vendedora]) metasDaEquipe[vendedora] = {};
+        metasDaEquipe[vendedora].diaria = diaria;
+        metasDaEquipe[vendedora].semanal = semanal;
+        metasDaEquipe[vendedora].mensal = mensal;
+        
+        if(!metasDaEquipe["EQUIPE_GERAL"]) metasDaEquipe["EQUIPE_GERAL"] = {};
+        metasDaEquipe["EQUIPE_GERAL"].mensal = equipe;
+        
+        atualizarBarraDeProgresso();
+        atualizarTelaMetas();
+        Swal.fire('Sucesso!', 'Metas salvas!', 'success');
     } catch (e) {
-        Swal.fire('Erro!', 'Não foi possível salvar as metas.', 'error');
+        console.error("Erro ao salvar metas:", e);
+        Swal.fire('Erro!', 'Não foi possível se conectar à planilha de Metas.', 'error');
     }
 }
 
