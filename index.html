@@ -138,7 +138,9 @@
     </div>
     <nav>
         <a id="navDashboard" onclick="alternarTela('dashboard')"><i class="fas fa-chart-line"></i> Dashboard</a>
-        <a id="navComissoes" class="active" onclick="alternarTela('comissoes')"><i class="fas fa-users"></i> Comissões</a>
+        <a id="navComissoes" class="active" onclick="alternarTela('comissoes')"><i class="fas fa-users"></i> Vendas
+        </a>
+        <a id="navMetas" onclick="alternarTela('metas')"><i class="fas fa-bullseye"></i> Metas</a>
         <a id="navFornecedores" onclick="alternarTela('fornecedores')"><i class="fas fa-truck"></i> Fornecedores e Clientes</a>
         <a id="navPlanilhas" onclick="alternarTela('planilhas')"><i class="fas fa-table"></i> PLANILHAS </a>
         <a id="navConfig" onclick="alternarTela('config')"><i class="fas fa-cog"></i> Configurações</a>
@@ -301,7 +303,7 @@
             <p><strong>🤝 Comissão Representante:</strong> <span id="valComisRep">R$ 0,00</span></p>
         </div>
     </div>
-    <h2>Sistema de Comissões</h2>
+    <h2>Sistema de Vendas</h2>
     
     <label>Empresa:</label>
     <select id="empresaSelecionada">
@@ -516,6 +518,50 @@
     </div>
 </div>
 
+<div id="telaMetas" class="container hidden">
+    <h2>Acompanhamento de Metas</h2>
+
+    <div id="minhasMetasContainer">
+        <h3>Minhas Metas</h3>
+        <div class="result-box" style="margin-bottom: 15px; border-color: #17a2b8;">
+            <h4 style="margin-top: 0; color: #17a2b8; display: flex; justify-content: space-between;"><span>Meta Diária</span> <span id="valMetaDiaria">R$ 0,00 / R$ 0,00</span></h4>
+            <div class="progress-bar-background"><div id="progMetaDiaria" class="progress-bar-foreground" style="background: #17a2b8;">0%</div></div>
+        </div>
+        <div class="result-box" style="margin-bottom: 15px; border-color: #f39c12;">
+            <h4 style="margin-top: 0; color: #f39c12; display: flex; justify-content: space-between;"><span>Meta Semanal</span> <span id="valMetaSemanal">R$ 0,00 / R$ 0,00</span></h4>
+            <div class="progress-bar-background"><div id="progMetaSemanal" class="progress-bar-foreground" style="background: #f39c12;">0%</div></div>
+        </div>
+        <div class="result-box" style="margin-bottom: 15px; border-color: #28a745;">
+            <h4 style="margin-top: 0; color: #28a745; display: flex; justify-content: space-between;"><span>Meta Mensal</span> <span id="valMetaMensal">R$ 0,00 / R$ 0,00</span></h4>
+            <div class="progress-bar-background"><div id="progMetaMensal" class="progress-bar-foreground" style="background: #28a745;">0%</div></div>
+        </div>
+    </div>
+
+    <div id="metaEquipeContainer" class="result-box" style="margin-bottom: 20px; border-color: #8e44ad;">
+        <h3 style="margin-top: 0; color: #8e44ad; display: flex; justify-content: space-between;"><span>Meta Geral da Equipe (Mensal)</span> <span id="valMetaEquipe">R$ 0,00 / R$ 0,00</span></h3>
+        <div class="progress-bar-background"><div id="progMetaEquipe" class="progress-bar-foreground" style="background: #8e44ad;">0%</div></div>
+    </div>
+
+    <div id="adminMetasContainer" class="hidden" style="margin-top: 30px; border-top: 2px dashed #ccc; padding-top: 20px;">
+        <h3 style="color: var(--primary); margin-top: 0;"><i class="fas fa-cogs"></i> Estabelecer Metas</h3>
+        <label>Vendedora:</label>
+        <select id="selectVendedoraMeta" onchange="carregarMetaFormulario()">
+            <option value="">Selecione uma vendedora...</option>
+        </select>
+        <label>Meta Diária (R$):</label>
+        <input type="number" id="inputMetaDiaria" placeholder="Ex: 500">
+        <label>Meta Semanal (R$):</label>
+        <input type="number" id="inputMetaSemanal" placeholder="Ex: 2500">
+        <label>Meta Mensal (R$):</label>
+        <input type="number" id="inputMetaMensal" placeholder="Ex: 10000">
+        <label>Meta Geral da Equipe (R$) - Afeta a todos:</label>
+        <input type="number" id="inputMetaEquipe" placeholder="Ex: 50000">
+        <button onclick="salvarMetasIndividuais()" style="background: #2980b9;"><i class="fas fa-save"></i> Salvar Metas</button>
+        <h3 style="margin-top: 30px; color: var(--primary);"><i class="fas fa-users"></i> Desempenho da Equipe (Mensal)</h3>
+        <div id="listaDesempenhoEquipe"></div>
+    </div>
+</div>
+
 <div id="telaConfig" class="container hidden">
     <h2>Configurações do Sistema</h2>
     
@@ -545,17 +591,6 @@
         <textarea id="pushBody" placeholder="Digite a mensagem que aparecerá no celular da vendedora..." style="height: 100px;"></textarea>
 
         <button onclick="enviarNotificacaoPush()" style="background: #8e44ad;"><i class="fas fa-paper-plane"></i> Enviar Mensagem</button>
-    </div>
-
-    <!-- PAINEL DE GERENCIAMENTO DE METAS (SÓ PARA ADMINS) -->
-    <div id="painelAdminMetas" class="result-box hidden" style="margin-top: 20px; border-color: #2980b9;">
-        <h3 style="margin-top:0; color: #2980b9; display: flex; align-items: center; gap: 10px;"><i class="fas fa-bullseye"></i> Gerenciar Metas da Equipe (Mensal)</h3>
-        
-        <div id="listaGerenciamentoMetas">
-            <p>Carregando equipe...</p>
-        </div>
-
-        <button onclick="salvarMetasEquipe()" style="background: #2980b9; margin-top: 15px;"><i class="fas fa-save"></i> Salvar Todas as Metas</button>
     </div>
 
     <div class="result-box" style="display: flex; flex-direction: column; align-items: center; text-align: center; margin-top: 20px;">
