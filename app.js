@@ -1,6 +1,6 @@
 // URLs das suas Planilhas
 const URL_COMISSOES = "https://script.google.com/macros/s/AKfycbxHovQbCHgl6L7AVOlz4bl1ih1Ncx1XgNgDW73ANmN21Z1oPpnyTIMY2tKj9NZdEqkb/exec";
-const URL_METAS_DB = "https://script.google.com/macros/s/AKfycbz1aV-T0mhuQHm8obX13aFQn8uxhAQirQeS4nPF90nzCmHirCgOujOguXgxlW7sul4W/exec";
+const URL_METAS_DB = "https://script.google.com/macros/s/AKfycbxcdOZ9Z7MctkvH3DE84s2l6jFJz6mPShv2oK3YrI0hbMK7OQt8YXPs0N9yQniM2axG/exec";
 const URL_FORNECEDORES = "https://script.google.com/macros/s/AKfycbxpMXA3xWANJ8ivdoj_3ZbUV0nCXDWvJ7Ja5E6bTAdVquSImH_gDfQ9pabnwvoaZK5b/exec";
 const URL_SHEET_BANCO = "https://docs.google.com/spreadsheets/d/1_UIvezU3eh5HQ98ttIXsViCCsY2opGwNOfZbv4SVFfc/edit?usp=sharing";
 const URL_SHEET_LOGISTICA = "https://docs.google.com/spreadsheets/d/1inVjNncz3YdWV31iEShiYjCUkWEE0fOfkTXCwRDu98k/edit?usp=sharing";
@@ -1961,8 +1961,7 @@ async function salvarMetasIndividuais() {
     try {
         await fetch(URL_METAS_DB, {
             method: 'POST',
-            mode: 'no-cors',
-            headers: { 'Content-Type': 'text/plain' },
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
             body: JSON.stringify({ 
                 acao: "salvarMetasAvancado", 
                 vendedora: vendedora, 
