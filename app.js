@@ -22,7 +22,7 @@ const ID_PLANILHA_COMISSOES = "1mNy4tXwYqFCcrLP37ts8gDsxJe0Uxjo7Ikmu38gHtB8";
 const ID_PLANILHA_METAS = "13loIiCcoWr2x-S8i1nD-EmCoUsNLmj3JoXNxW1cHr24";
 
 // Controle de Versão do App (Mude sempre que enviar atualização)
-const APP_VERSION = "1.1.0";
+const APP_VERSION = "1.1.1";
 
 let usuarioLogado = localStorage.getItem('usuarioLogado');
 

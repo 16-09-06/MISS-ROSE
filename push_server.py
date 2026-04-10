@@ -8,7 +8,7 @@ app = Flask(__name__)
  
 # ✅ CORS configurado EXATAMENTE para o seu GitHub Pages e para testes locais.
 # Impede que outros sites tentem usar sua API.
-CORS(app, origins=["https://16-09-06.github.io", "http://localhost:5000", "http://127.0.0.1:5000"])
+CORS(app, origins=["https://16-09-06.github.io", "http://localhost:5000", "http://127.0.0.1:5000" ,"https://miss-rose-rho.vercel.app/"])
  
 # ✅ Suas chaves VAPID — a chave privada é lida de variável de ambiente
 # para não ficar exposta no código. No seu servidor, execute:
