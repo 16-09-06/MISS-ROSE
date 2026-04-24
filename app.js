@@ -4,22 +4,24 @@ const URL_METAS_DB = "https://script.google.com/macros/s/AKfycbxcdOZ9Z7MctkvH3DE
 const URL_FORNECEDORES = "https://script.google.com/macros/s/AKfycbxpMXA3xWANJ8ivdoj_3ZbUV0nCXDWvJ7Ja5E6bTAdVquSImH_gDfQ9pabnwvoaZK5b/exec";
 const URL_SHEET_BANCO = "https://docs.google.com/spreadsheets/d/1_UIvezU3eh5HQ98ttIXsViCCsY2opGwNOfZbv4SVFfc/edit?usp=sharing";
 const URL_SHEET_LOGISTICA = "https://docs.google.com/spreadsheets/d/1inVjNncz3YdWV31iEShiYjCUkWEE0fOfkTXCwRDu98k/edit?usp=sharing";
-const URL_SHEET_GERENCIAL = "https://docs.google.com/spreadsheets/d/1mNy4tXwYqFCcrLP37ts8gDsxJe0Uxjo7Ikmu38gHtB8/edit#gid=0";
+const URL_SHEET_GERENCIAL = "https://script.google.com/macros/s/AKfycbxHovQbCHgl6L7AVOlz4bl1ih1Ncx1XgNgDW73ANmN21Z1oPpnyTIMY2tKj9NZdEqkb/exec";
 const URL_LOGIN_DB = "https://script.google.com/macros/s/AKfycbyffqQQUSRWVVpyQyKyKTC5fwyEii8RzF9fFlJflwhFupAZ-QusTzhXrGSgMFEZQRHgxA/exec";
 
 // ✅ URL do Servidor Flask (Python)
 // Como o GitHub Pages é HTTPS, o link da sua API também DEVE SER HTTPS!
-// Cole aqui a URL do seu servidor na nuvem (ex: Render, Railway) quando for disponibilizar.
 const URL_FLASK = "https://kayklima.pythonanywhere.com";
 
-// 👇 COLOQUE SUA CHAVE PÚBLICA VAPID AQUI 👇
+// CHAVE PÚBLICA VAPID AQUI
 const VAPID_PUBLIC_KEY = "BCGB4GBtvMovAqlJkoVUIWGc2RP-8J1DzE7cZZ1Qo9YRDfKYkKUUa781Vo0tdOAeunSvWFRK9E9S33YoQp6rBBs";
 
-// 👇 COLOQUE AQUI O ID DA SUA PLANILHA ONDE AS COMISSÕES SÃO SALVAS 👇
+// ID DA PLANILHA ONDE AS COMISSÕES SÃO SALVAS 👇
 const ID_PLANILHA_COMISSOES = "1mNy4tXwYqFCcrLP37ts8gDsxJe0Uxjo7Ikmu38gHtB8";
+// ID DA PLANILHA ONDE AS COMISSÕES SÃO SALVAS 👇 (Obfuscado)
 
-// 👇 COLOQUE AQUI O ID DA SUA NOVA PLANILHA EXCLUSIVA PARA METAS 👇
+
+//ID DA PLANILHA EXCLUSIVA PARA METAS 👇
 const ID_PLANILHA_METAS = "13loIiCcoWr2x-S8i1nD-EmCoUsNLmj3JoXNxW1cHr24";
+//ID DA PLANILHA EXCLUSIVA PARA METAS 👇 (Obfuscado)
 
 // Controle de Versão do App (Mude sempre que enviar atualização)
 const APP_VERSION = "1.1.1";
@@ -1211,11 +1213,11 @@ async function carregarDashboardReal() {
         delete window.callbackDashReal;
         
         // Pela ordem que você salva os dados no Apps Script, as posições das colunas começam em 0:
-        let colMes = 14;      // Mês
-        let colVend = 17;     // Vendedora
+        let colMes = 13;      // Mês
+        let colVend = 16;     // Vendedora
         let colCli = 5;       // Razão Social do Cliente
-        let colTotal = 12;    // Total do Pedido
-        let colComissao = 26; // Valor da Comissão (a última da sua lista)
+        let colTotal = 11;    // Total do Pedido
+        let colComissao = 25; // Valor da Comissão (a última da sua lista)
 
         vendasGlobaisDash = data.table.rows || []; // Salva pro Mini-CRM
 
