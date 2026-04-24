@@ -4,7 +4,7 @@ const URL_METAS_DB = "https://script.google.com/macros/s/AKfycbxcdOZ9Z7MctkvH3DE
 const URL_FORNECEDORES = "https://script.google.com/macros/s/AKfycbxpMXA3xWANJ8ivdoj_3ZbUV0nCXDWvJ7Ja5E6bTAdVquSImH_gDfQ9pabnwvoaZK5b/exec";
 const URL_SHEET_BANCO = "https://docs.google.com/spreadsheets/d/1_UIvezU3eh5HQ98ttIXsViCCsY2opGwNOfZbv4SVFfc/edit?usp=sharing";
 const URL_SHEET_LOGISTICA = "https://docs.google.com/spreadsheets/d/1inVjNncz3YdWV31iEShiYjCUkWEE0fOfkTXCwRDu98k/edit?usp=sharing";
-const URL_SHEET_GERENCIAL = "https://script.google.com/macros/s/AKfycbxHovQbCHgl6L7AVOlz4bl1ih1Ncx1XgNgDW73ANmN21Z1oPpnyTIMY2tKj9NZdEqkb/exec";
+const URL_SHEET_GERENCIAL = "https://docs.google.com/spreadsheets/d/1mNy4tXwYqFCcrLP37ts8gDsxJe0Uxjo7Ikmu38gHtB8/edit?usp=sharing";
 const URL_LOGIN_DB = "https://script.google.com/macros/s/AKfycbyffqQQUSRWVVpyQyKyKTC5fwyEii8RzF9fFlJflwhFupAZ-QusTzhXrGSgMFEZQRHgxA/exec";
 
 // ✅ URL do Servidor Flask (Python)
@@ -1194,6 +1194,7 @@ async function carregarDashboardReal() {
     const fInicio = document.getElementById('filtroDataInicio') ? document.getElementById('filtroDataInicio').value : "";
     const fFim = document.getElementById('filtroDataFim') ? document.getElementById('filtroDataFim').value : "";
     const fVend = document.getElementById('filtroVendedoraDash') ? document.getElementById('filtroVendedoraDash').value.toUpperCase() : "TODAS";
+    const fRep = document.getElementById('filtroRepresentanteDash') ? document.getElementById('filtroRepresentanteDash').value.toUpperCase() : "TODOS";
     let valInicio = fInicio ? new Date(fInicio + "T00:00:00") : null;
     let valFim = fFim ? new Date(fFim + "T23:59:59") : null;
     
@@ -1215,6 +1216,7 @@ async function carregarDashboardReal() {
         // Pela ordem que você salva os dados no Apps Script, as posições das colunas começam em 0:
         let colMes = 13;      // Mês
         let colVend = 16;     // Vendedora
+        let colRep = 17;      // Representante
         let colCli = 5;       // Razão Social do Cliente
         let colTotal = 11;    // Total do Pedido
         let colComissao = 25; // Valor da Comissão (a última da sua lista)
@@ -1222,7 +1224,7 @@ async function carregarDashboardReal() {
         vendasGlobaisDash = data.table.rows || []; // Salva pro Mini-CRM
 
         if (!data.table || !data.table.rows) {
-            renderizarDashAvancado([], mesAtual, anoAtual, colVend, colTotal, 0, colCli, vendedoraLogada, valInicio, valFim, fVend, colComissao);
+            renderizarDashAvancado([], mesAtual, anoAtual, colVend, colTotal, 0, colCli, vendedoraLogada, valInicio, valFim, fVend, colComissao, colRep, fRep);
             return;
         }
 
@@ -1255,6 +1257,44 @@ async function carregarDashboardReal() {
         } else if (selectVend) {
             selectVend.style.display = 'none';
         }
+        
+        // Popula Select de Representantes dinamicamente baseado na Vendedora
+        const selectRep = document.getElementById('filtroRepresentanteDash');
+        if (selectRep) {
+            let representantesUnicos = new Set();
+            data.table.rows.forEach(r => {
+                if(r.c && r.c[colVend] && r.c[colVend].v) {
+                    let v = String(r.c[colVend].v).toUpperCase().trim();
+                    let vendedoraMatch = false;
+                    if (fVend === "TODAS") {
+                        if (isSuperAdmin) vendedoraMatch = true;
+                        else if (userLogadoUpper === 'RENATA' && equipeRenata.includes(v)) vendedoraMatch = true;
+                        else if (userLogadoUpper === 'CAROL' && equipeCarol.includes(v)) vendedoraMatch = true;
+                        else if (v === userLogadoUpper) vendedoraMatch = true;
+                    } else {
+                        vendedoraMatch = (v === fVend);
+                    }
+
+                    if (vendedoraMatch && r.c[colRep] && r.c[colRep].v) {
+                        let rep = String(r.c[colRep].v).toUpperCase().trim();
+                        if (rep && rep !== "VENDA DIRETA" && rep !== "N/A" && rep !== "NULL") {
+                            representantesUnicos.add(rep);
+                        }
+                    }
+                }
+            });
+            
+            let currentRepVal = selectRep.value;
+            selectRep.innerHTML = '<option value="TODOS">Representantes (Todos)</option>';
+            if (representantesUnicos.size > 0) {
+                selectRep.style.display = 'inline-block';
+                Array.from(representantesUnicos).sort().forEach(rep => {
+                    let opt = document.createElement('option'); opt.value = rep; opt.innerText = rep; selectRep.appendChild(opt);
+                });
+            } else { selectRep.style.display = 'none'; }
+            selectRep.value = (representantesUnicos.has(currentRepVal) || currentRepVal === "TODOS") ? currentRepVal : "TODOS";
+        }
+        let activeRep = selectRep ? selectRep.value : "TODOS";
 
         let somaTotalVendas = 0;
         let somaComissao = 0;
@@ -1287,6 +1327,7 @@ async function carregarDashboardReal() {
             
             let rowMes = row.c[colMes] && row.c[colMes].v ? String(row.c[colMes].v).toUpperCase().trim() : "";
             let rowVend = row.c[colVend] && row.c[colVend].v ? String(row.c[colVend].v).toUpperCase().trim() : "";
+            let rowRep = row.c[colRep] && row.c[colRep].v ? String(row.c[colRep].v).toUpperCase().trim() : "";
             
             let dataEmissaoStr = row.c[3] && row.c[3].f ? String(row.c[3].f) : (row.c[3] && row.c[3].v ? String(row.c[3].v) : "");
             let rowAno = dataEmissaoStr.match(/\d{4}/) ? dataEmissaoStr.match(/\d{4}/)[0] : new Date().getFullYear().toString();
@@ -1317,13 +1358,14 @@ async function carregarDashboardReal() {
             }
 
             if (fVend !== "TODAS" && rowVend !== fVend) isVendaValida = false;
+            if (activeRep !== "TODOS" && rowRep !== activeRep) isVendaValida = false;
 
             // Coleta o nome de todos os clientes da empresa e adiciona na memória sem repetir
             let rowCli = row.c[colCli] && row.c[colCli].v ? String(row.c[colCli].v).trim() : "";
             if (rowCli && rowCli !== "N/A") clientesMemoria.add(rowCli);
 
             let rawTotalGeral = row.c[colTotal] ? row.c[colTotal].v : 0;
-            let valTotalGeral = typeof rawTotalGeral === 'number' ? rawTotalGeral : parseFloat(String(rawTotalGeral).replace(',', '.')) || 0;
+            let valTotalGeral = unmaskValor(rawTotalGeral);
 
             if (rowDate && valTotalGeral > 0) {
                 let isEquipeValid = isSuperAdmin || (userLogadoUpper === 'RENATA' && equipeRenata.includes(rowVend)) || (userLogadoUpper === 'CAROL' && equipeCarol.includes(rowVend)) || rowVend === userLogadoUpper;
@@ -1345,7 +1387,7 @@ async function carregarDashboardReal() {
             if (isDateValid && isVendaValida) {
                 let valTotal = valTotalGeral;
                 let rawCom = row.c[colComissao] ? row.c[colComissao].v : 0;
-                let valComissao = typeof rawCom === 'number' ? rawCom : parseFloat(String(rawCom).replace(',', '.')) || 0;
+                let valComissao = unmaskValor(rawCom);
                 
                 somaTotalVendas += valTotal;
                 somaComissao += valComissao;
@@ -1359,11 +1401,11 @@ async function carregarDashboardReal() {
             
             // Acumula os dados se a venda for do mês ANTERIOR
             if (isDateValidPrev && isVendaValida) {
-                let rawTotal = row.c[colTotal] ? row.c[colTotal].v : 0;
-                somaTotalVendasPrev += (typeof rawTotal === 'number' ? rawTotal : parseFloat(String(rawTotal).replace(',', '.')) || 0);
+                let rawTotalPrev = row.c[colTotal] ? row.c[colTotal].v : 0;
+                somaTotalVendasPrev += unmaskValor(rawTotalPrev);
                 countPedidosPrev++;
-                let rawCom = row.c[colComissao] ? row.c[colComissao].v : 0;
-                let valComPrev = typeof rawCom === 'number' ? rawCom : parseFloat(String(rawCom).replace(',', '.')) || 0;
+                let rawComPrev = row.c[colComissao] ? row.c[colComissao].v : 0;
+                let valComPrev = unmaskValor(rawComPrev);
                 let isLiquido = row.c.some(c => c && typeof c.v === 'string' && c.v.toUpperCase() === 'LIQUIDO');
                 if (isLiquido) comissaoLiquidaPrev += valComPrev; else comissaoPendentePrev += valComPrev;
             }
@@ -1402,7 +1444,7 @@ async function carregarDashboardReal() {
         }
 
         // Envia os dados para renderizar os gráficos E a tabela
-        renderizarDashAvancado(data.table.rows, mesAtual, anoAtual, colVend, colTotal, 0, colCli, vendedoraLogada, valInicio, valFim, fVend, colComissao); 
+        renderizarDashAvancado(data.table.rows, mesAtual, anoAtual, colVend, colTotal, 0, colCli, vendedoraLogada, valInicio, valFim, fVend, colComissao, colRep, activeRep); 
         atualizarBarraDeProgresso(); // Atualiza a barra de metas com o faturamento calculado
         atualizarTelaMetas();
     };
@@ -1414,14 +1456,14 @@ async function carregarDashboardReal() {
         document.getElementById('scriptGvizDash') ?.remove();
         delete window.callbackDashReal;
         console.warn("Erro ao puxar dados do Dashboard.");
-        if (!chartMensal) renderizarDashAvancado([], mesAtual, anoAtual, 17, 12, 0, 5, vendedoraLogada, valInicio, valFim, fVend, 26);
+        if (!chartMensal) renderizarDashAvancado([], mesAtual, anoAtual, 16, 11, 0, 5, vendedoraLogada, valInicio, valFim, fVend, 25, 17, "TODOS");
         atualizarBarraDeProgresso();
         atualizarTelaMetas();
     };
     document.body.appendChild(script);
 }
 
-function renderizarDashAvancado(rows, mesAtual, anoAtual, colVend, colTotal, colEmpresa, colCli, vendedoraLogada, valInicio, valFim, fVend, colComissao = 26) {
+function renderizarDashAvancado(rows, mesAtual, anoAtual, colVend, colTotal, colEmpresa, colCli, vendedoraLogada, valInicio, valFim, fVend, colComissao = 25, colRep = 17, fRep = "TODOS") {
     const userLogadoUpper = (usuarioLogado || "").toUpperCase();
     const superAdmins = ['KAYK', 'JHONATA', 'DEBORA', 'FELIPE'];
     const isSuperAdmin = superAdmins.includes(userLogadoUpper);
@@ -1448,14 +1490,14 @@ function renderizarDashAvancado(rows, mesAtual, anoAtual, colVend, colTotal, col
 
     for (let row of rows) {
         if(!row.c) continue;
-        let rowMes = row.c[14] && row.c[14].v ? String(row.c[14].v).toUpperCase().trim() : "";
-
+        let rowMes = row.c[13] && row.c[13].v ? String(row.c[13].v).toUpperCase().trim() : "";
         let dataEmissao = row.c[3] && row.c[3].f ? String(row.c[3].f) : (row.c[3] && row.c[3].v ? String(row.c[3].v).substring(0, 10) : "N/A");
         let vendedora = row.c[colVend] && row.c[colVend].v ? String(row.c[colVend].v).toUpperCase() : "N/A";
+        let representante = row.c[colRep] && row.c[colRep].v ? String(row.c[colRep].v).toUpperCase().trim() : "VENDA DIRETA";
         let empresa = row.c[colEmpresa] && row.c[colEmpresa].v ? String(row.c[colEmpresa].v).toUpperCase() : "MISS RÔSE";
         let cliente = row.c[colCli] && row.c[colCli].v ? String(row.c[colCli].v) : "N/A";
         let rawTotal = row.c[colTotal] ? row.c[colTotal].v : 0;
-        let total = typeof rawTotal === 'number' ? rawTotal : parseFloat(String(rawTotal).replace(',', '.')) || 0;
+        let total = unmaskValor(rawTotal);
         let rowAno = dataEmissao.match(/\d{4}/) ? dataEmissao.match(/\d{4}/)[0] : new Date().getFullYear().toString();
 
         if (total > 0) {
@@ -1494,6 +1536,7 @@ function renderizarDashAvancado(rows, mesAtual, anoAtual, colVend, colTotal, col
             }
 
             if (fVend !== "TODAS" && vendedora !== fVend) isVendaValida = false;
+            if (fRep !== "TODOS" && representante !== fRep) isVendaValida = false;
 
             if (isDateValid && isVendaValida) {
                 // Soma para a linha do Gráfico
@@ -1545,7 +1588,7 @@ function renderizarDashAvancado(rows, mesAtual, anoAtual, colVend, colTotal, col
                     '<span style="background: #fff3cd; color: #856404; padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: bold;"><i class="fas fa-clock"></i> Pendente</span>';
 
                 let rawCom = row.c[colComissao] ? row.c[colComissao].v : 0;
-                let valComissao = typeof rawCom === 'number' ? rawCom : parseFloat(String(rawCom).replace(',', '.')) || 0;
+                let valComissao = unmaskValor(rawCom);
                 totalComissaoRecibo += valComissao;
 
                 reciboLinhas += `
@@ -1585,6 +1628,7 @@ function renderizarDashAvancado(rows, mesAtual, anoAtual, colVend, colTotal, col
         document.getElementById('reciboTotal').innerText = totalComissaoRecibo.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
         
         let nomeRecibo = (fVend && fVend !== "TODAS") ? fVend : (isAdmin ? "MÚLTIPLAS VENDEDORAS" : userLogadoUpper);
+        if (fRep !== "TODOS") nomeRecibo += ` (Rep: ${fRep})`;
         document.getElementById('reciboVendedora').innerText = nomeRecibo;
         
         let dtInicioForm = document.getElementById('filtroDataInicio') ? document.getElementById('filtroDataInicio').value : "";
@@ -2009,7 +2053,7 @@ function abrirFichaCliente(nomeClienteLimpo) {
         let rowCli = row.c[5] && row.c[5].v ? String(row.c[5].v).toUpperCase().trim() : "";
         if (rowCli.includes(nomeBusca)) {
             let dataEmissao = row.c[3] && row.c[3].f ? String(row.c[3].f) : (row.c[3] && row.c[3].v ? String(row.c[3].v).substring(0, 10) : "N/A");
-            let rawTotal = row.c[12] ? row.c[12].v : 0;
+            let rawTotal = row.c[11] ? row.c[11].v : 0;
             let valTotal = typeof rawTotal === 'number' ? rawTotal : parseFloat(String(rawTotal).replace(',', '.')) || 0;
             
             totalGasto += valTotal;
