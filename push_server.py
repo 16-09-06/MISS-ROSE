@@ -68,6 +68,7 @@ def salvar_inscricao():
         return jsonify({"erro": "Campos 'nome' e 'subscription' são obrigatórios"}), 400
  
     subscriptions_db[nome] = subscription
+    salvar_banco(subscriptions_db) # Garante que a nova inscrição seja salva no arquivo
     print(f"[Push] Inscrição salva para: {nome}. Total inscritos: {len(subscriptions_db)}")
     return jsonify({"status": "sucesso", "usuario": nome}), 200
  
@@ -117,6 +118,7 @@ def enviar_push():
             if hasattr(ex, 'response') and ex.response and ex.response.status_code == 410:
                 print(f"[Push] Removendo inscrição expirada de {nome}")
                 del subscriptions_db[nome]
+                salvar_banco(subscriptions_db) # Garante que a remoção seja salva no arquivo
  
     return jsonify({"status": "sucesso", "resultado": resultados}), 200
  

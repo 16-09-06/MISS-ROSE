@@ -19,12 +19,20 @@ const ID_PLANILHA_COMISSOES = "1mNy4tXwYqFCcrLP37ts8gDsxJe0Uxjo7Ikmu38gHtB8";
 // ID DA PLANILHA ONDE AS COMISSÕES SÃO SALVAS 👇 (Obfuscado)
 
 
-//ID DA PLANILHA EXCLUSIVA PARA METAS 👇
-const ID_PLANILHA_METAS = "13loIiCcoWr2x-S8i1nD-EmCoUsNLmj3JoXNxW1cHr24";
-//ID DA PLANILHA EXCLUSIVA PARA METAS 👇 (Obfuscado)
+const ID_PLANILHA_METAS = "13loIiCcoWr2x-S8i1nD-EmCoUsNLmj3JoXNxW1cHr24"; //ID DA PLANILHA EXCLUSIVA PARA METAS 👇
 
-// Controle de Versão do App (Mude sempre que enviar atualização)
-const APP_VERSION = "1.1.1";
+// --- CONFIGURAÇÕES GLOBAIS DO APP ---
+const APP_CONFIG = {
+    VERSION: "1.1.1",
+    ROLES: {
+        SUPER_ADMINS: ['KAYK', 'JHONATA', 'DEBORA', 'FELIPE'],
+        ADMINS: ['RENATA', 'CAROL']
+    },
+    TEAMS: {
+        RENATA: ['RENATA', 'HOZANA', 'ISRAEL', 'ROSANGELA', 'SARA', 'VINICIUS'],
+        CAROL:  ['CAROL', 'ALICE', 'CHARLENE', 'HEMILLY', 'MICHELLE']
+    }
+};
 
 let usuarioLogado = localStorage.getItem('usuarioLogado');
 
@@ -97,23 +105,19 @@ function setAndLockVendedora(user) {
     if (!vendedoraSelect) return;
 
     const userUpper = user.toUpperCase();
-    const superAdmins = ['KAYK', 'JHONATA', 'DEBORA', 'FELIPE'];
-    const isSuperAdmin = superAdmins.includes(userUpper);
-    const isAdmin = isSuperAdmin || ['RENATA', 'CAROL'].includes(userUpper);
-
-    const equipeRenata = ['RENATA', 'HOZANA', 'ISRAEL', 'ROSANGELA', 'SARA', 'VINICIUS'];
-    const equipeCarol  = ['CAROL', 'ALICE', 'CHARLENE', 'HEMILLY', 'MICHELLE'];
+    const isSuperAdmin = APP_CONFIG.ROLES.SUPER_ADMINS.includes(userUpper);
+    const isAdmin = isSuperAdmin || APP_CONFIG.ROLES.ADMINS.includes(userUpper);
 
     // Limpa as opções antigas e preenche com a equipe correta
     vendedoraSelect.innerHTML = '<option value="">Selecione...</option>';
     let vendedorasPermitidas = [];
     
     if (isSuperAdmin) {
-        vendedorasPermitidas = [...new Set([...equipeRenata, ...equipeCarol, userUpper])].sort();
+        vendedorasPermitidas = [...new Set([...APP_CONFIG.TEAMS.RENATA, ...APP_CONFIG.TEAMS.CAROL, userUpper])].sort();
     } else if (userUpper === 'RENATA') {
-        vendedorasPermitidas = equipeRenata;
+        vendedorasPermitidas = APP_CONFIG.TEAMS.RENATA;
     } else if (userUpper === 'CAROL') {
-        vendedorasPermitidas = equipeCarol;
+        vendedorasPermitidas = APP_CONFIG.TEAMS.CAROL;
     } else {
         vendedorasPermitidas = [userUpper];
     }
@@ -136,11 +140,8 @@ function setAndLockVendedora(user) {
 
 function setupAdminFeatures(user) {
     const userUpper = user.toUpperCase();
-    const superAdmins = ['KAYK', 'JHONATA', 'DEBORA', 'FELIPE'];
-    const equipeRenata = ['RENATA', 'HOZANA', 'ISRAEL', 'ROSANGELA', 'SARA', 'VINICIUS'];
-    const equipeCarol  = ['CAROL', 'ALICE', 'CHARLENE', 'HEMILLY', 'MICHELLE'];
-    const isSuperAdmin = superAdmins.includes(userUpper);
-    const isAdmin = isSuperAdmin || ['RENATA', 'CAROL'].includes(userUpper);
+    const isSuperAdmin = APP_CONFIG.ROLES.SUPER_ADMINS.includes(userUpper);
+    const isAdmin = isSuperAdmin || APP_CONFIG.ROLES.ADMINS.includes(userUpper);
 
     const painelPush = document.getElementById('painelAdminPush');
     const painelMetas = document.getElementById('adminMetasContainer');
@@ -165,7 +166,7 @@ function setupAdminFeatures(user) {
         const selectVendedoraMeta = document.getElementById('selectVendedoraMeta');
         if (selectVendedoraMeta) {
             selectVendedoraMeta.innerHTML = '<option value="">Selecione uma vendedora...</option>';
-            let equipeGerir = isSuperAdmin ? [...new Set([...equipeRenata, ...equipeCarol])].sort() : (userUpper === 'RENATA' ? equipeRenata : equipeCarol);
+            let equipeGerir = isSuperAdmin ? [...new Set([...APP_CONFIG.TEAMS.RENATA, ...APP_CONFIG.TEAMS.CAROL])].sort() : (userUpper === 'RENATA' ? APP_CONFIG.TEAMS.RENATA : APP_CONFIG.TEAMS.CAROL);
             equipeGerir.forEach(v => selectVendedoraMeta.add(new Option(v, v)));
         }
     } else {
@@ -370,38 +371,35 @@ function efetuarLogout() {
     location.reload(); 
 }
 
+const UIElements = {
+    telas: {
+        dashboard: document.getElementById('telaDashboard'),
+        comissoes: document.getElementById('telaComissoes'),
+        fornecedores: document.getElementById('telaFornecedores'),
+        planilhas: document.getElementById('telaPlanilhas'),
+        config: document.getElementById('telaConfig'),
+        metas: document.getElementById('telaMetas'),
+    },
+    navs: {
+        dashboard: document.getElementById('navDashboard'),
+        comissoes: document.getElementById('navComissoes'),
+        fornecedores: document.getElementById('navFornecedores'),
+        planilhas: document.getElementById('navPlanilhas'),
+        config: document.getElementById('navConfig'),
+        metas: document.getElementById('navMetas'),
+    }
+};
+
 function alternarTela(tela) {
-    const telaDash = document.getElementById('telaDashboard');
-    const telaCom = document.getElementById('telaComissoes');
-    const telaFor = document.getElementById('telaFornecedores');
-    const telaPlan = document.getElementById('telaPlanilhas');
-    const telaConfig = document.getElementById('telaConfig');
-    const telaMetas = document.getElementById('telaMetas');
-    const navDash = document.getElementById('navDashboard');
-    const navCom = document.getElementById('navComissoes');
-    const navFor = document.getElementById('navFornecedores');
-    const navPlan = document.getElementById('navPlanilhas');
-    const navConfig = document.getElementById('navConfig');
-    const navMetas = document.getElementById('navMetas');
+    // Esconde todas as telas e desativa todos os links de navegação
+    Object.values(UIElements.telas).forEach(el => el?.classList.add('hidden'));
+    Object.values(UIElements.navs).forEach(el => el?.classList.remove('active'));
 
-    if (telaDash) telaDash.classList.add('hidden');
-    telaCom.classList.add('hidden');
-    telaFor.classList.add('hidden');
-    telaPlan.classList.add('hidden');
-    if (telaConfig) telaConfig.classList.add('hidden');
-    if (telaMetas) telaMetas.classList.add('hidden');
+    // Mostra a tela e ativa o link de navegação selecionado
+    if (UIElements.telas[tela]) UIElements.telas[tela].classList.remove('hidden');
+    if (UIElements.navs[tela]) UIElements.navs[tela].classList.add('active');
     
-    if (navDash) navDash.classList.remove('active');
-    navCom.classList.remove('active');
-    navFor.classList.remove('active');
-    navPlan.classList.remove('active');
-    if (navConfig) navConfig.classList.remove('active');
-    if (navMetas) navMetas.classList.remove('active');
-
     if (tela === 'dashboard') {
-        if (telaDash) telaDash.classList.remove('hidden');
-        if (navDash) navDash.classList.add('active');
-        
         // Dá um tempo para o navegador pintar a tela antes de expandir os gráficos
         setTimeout(() => {
             if (chartMensal) { chartMensal.resize(); chartMensal.update(); }
@@ -409,18 +407,7 @@ function alternarTela(tela) {
             if (chartEmpresas) { chartEmpresas.resize(); chartEmpresas.update(); }
             if (chartEstados) { chartEstados.resize(); chartEstados.update(); }
         }, 150);
-    } else if (tela === 'comissoes') {
-        telaCom.classList.remove('hidden'); navCom.classList.add('active');
-    } else if (tela === 'fornecedores') {
-        telaFor.classList.remove('hidden'); navFor.classList.add('active');
-    } else if (tela === 'planilhas') {
-        telaPlan.classList.remove('hidden'); navPlan.classList.add('active');
-    } else if (tela === 'config') {
-        if (telaConfig) telaConfig.classList.remove('hidden');
-        if (navConfig) navConfig.classList.add('active');
     } else if (tela === 'metas') {
-        if (telaMetas) telaMetas.classList.remove('hidden');
-        if (navMetas) navMetas.classList.add('active');
         atualizarTelaMetas();
     }
 }
@@ -754,50 +741,122 @@ async function consultarFornecedor() {
     }
 
     try {
-        const bResp = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cnpjLimpo}`);
-        if (bResp.ok) { 
-            const bData = await bResp.json(); 
-            dadosExtras = {
-                ibge: bData.codigo_municipio_ibge || "",
-                cep: bData.cep || "",
-                logradouro: bData.logradouro || "",
-                numero: bData.numero || "",
-                bairro: bData.bairro || ""
-            };
-        }
-    } catch(e) { console.log("BrasilAPI offline"); }
-
-    const script = document.createElement('script');
-    script.src = `https://receitaws.com.br/v1/cnpj/${cnpjLimpo}?callback=callbackReceita`;
-    document.body.appendChild(script);
-
-    window.callbackReceita = (r) => {
-        if (r.status === "ERROR") { Swal.fire('Erro', r.message, 'error'); return; }
+        exibirStatus('statusFornecedor', "🔍 Consultando CNPJ.ws...", "#e2e3e5", "#383d41");
+        const resWs = await fetch(`https://publica.cnpj.ws/cnpj/${cnpjLimpo}`);
+        if (!resWs.ok) throw new Error('CNPJ.ws falhou');
         
+        const r = await resWs.json();
+        
+        const estab = r.estabelecimento || {};
+        const cidade = estab.cidade ? estab.cidade.nome : "";
+        const uf = estab.estado ? estab.estado.sigla : "";
+        const ibge = estab.cidade ? estab.cidade.ibge_id : "N/A";
+        
+        // Pega a primeira Inscrição Estadual ativa, se houver
+        let ieEncontrada = "";
+        let ieSituacao = "NÃO POSSUI / ISENTO (Não Contribuinte)";
+        if (estab.inscricoes_estaduais && estab.inscricoes_estaduais.length > 0) {
+            const ieAtiva = estab.inscricoes_estaduais.find(ie => ie.ativo);
+            if (ieAtiva) {
+                ieEncontrada = ieAtiva.inscricao_estadual;
+                ieSituacao = "ATIVA (Contribuinte ICMS)";
+            } else {
+                ieEncontrada = estab.inscricoes_estaduais[0].inscricao_estadual;
+                ieSituacao = "INATIVA / BAIXADA";
+            }
+        }
+
+        // Verifica se é optante pelo Simples Nacional
+        let isSimples = (r.simples && r.simples.simples === 'Sim') ? "SIM" : "NÃO";
+
         dadosEmpresa = {
-            status: r.situacao || "ATIVO", 
-            cnpj: cnpjLimpo, 
-            razao_social: r.nome,
-            cidade: `${r.municipio} - ${r.uf}`, 
-            cod_municipio: dadosExtras.ibge || r.ibge || "N/A", 
-            telefone: r.telefone || "",
-            cep: r.cep || dadosExtras.cep || "N/A",
-            endereco: `${r.logradouro || dadosExtras.logradouro || ''}, ${r.numero || dadosExtras.numero || ''}`,
-            bairro: r.bairro || dadosExtras.bairro || "N/A"
+            status: estab.situacao_cadastral || "ATIVO",
+            cnpj: cnpjLimpo,
+            razao_social: r.razao_social || estab.nome_fantasia || "N/A",
+            cidade: `${cidade} - ${uf}`,
+            cod_municipio: ibge,
+            telefone: estab.telefone1 || "",
+            cep: estab.cep || "N/A",
+            endereco: `${estab.tipo_logradouro || ''} ${estab.logradouro || ''}, ${estab.numero || ''}`,
+            bairro: estab.bairro || "N/A"
         };
         
-        document.getElementById('resRazao').innerText = r.nome;
-        document.getElementById('resCnpj').innerText = cnpjLimpo;
-        document.getElementById('resCidade').innerText = dadosEmpresa.cidade;
-        document.getElementById('resTel').value = r.telefone; 
-        
-        document.getElementById('resCodMun').value = dadosEmpresa.cod_municipio;
-        document.getElementById('resEmail').value = r.email ? r.email.toLowerCase() : "";
-        
-        document.getElementById('resultadoFornecedor').style.display = 'block';
-        exibirStatus('statusFornecedor', "✅ Dados carregados com sucesso!", "#d4edda", "#155724");
-        document.body.removeChild(script);
-    };
+        preencherDadosFornecedorNaTela(dadosEmpresa, estab.email || "", ieEncontrada, isSimples, ieSituacao);
+
+    } catch (erro) {
+        console.warn('CNPJ.ws indisponível. Acionando fallback (Brasil API + ReceitaWS)...');
+        exibirStatus('statusFornecedor', "🔍 CNPJ.ws falhou, acionando ReceitaWS...", "#fff3cd", "#856404");
+
+        try {
+            const bResp = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cnpjLimpo}`);
+            if (bResp.ok) { 
+                const bData = await bResp.json(); 
+                dadosExtras = {
+                    ibge: bData.codigo_municipio_ibge || "",
+                    cep: bData.cep || "",
+                    logradouro: bData.logradouro || "",
+                    numero: bData.numero || "",
+                    bairro: bData.bairro || "",
+                    opcao_pelo_simples: bData.opcao_pelo_simples
+                };
+            }
+        } catch(e) { console.log("BrasilAPI offline"); }
+
+        const script = document.createElement('script');
+        script.src = `https://receitaws.com.br/v1/cnpj/${cnpjLimpo}?callback=callbackReceita`;
+        document.body.appendChild(script);
+
+        window.callbackReceita = (r) => {
+            if (r.status === "ERROR") { 
+                exibirStatus('statusFornecedor', "❌ Erro ao consultar CNPJ.", "#f8d7da", "#721c24");
+                Swal.fire('Erro', r.message, 'error'); 
+                return; 
+            }
+            
+            dadosEmpresa = {
+                status: r.situacao || "ATIVO", 
+                cnpj: cnpjLimpo, 
+                razao_social: r.nome,
+                cidade: `${r.municipio} - ${r.uf}`, 
+                cod_municipio: dadosExtras.ibge || r.ibge || "N/A", 
+                telefone: r.telefone || "",
+                cep: r.cep || dadosExtras.cep || "N/A",
+                endereco: `${r.logradouro || dadosExtras.logradouro || ''}, ${r.numero || dadosExtras.numero || ''}`,
+                bairro: r.bairro || dadosExtras.bairro || "N/A"
+            };
+            
+            let isSimples = dadosExtras.opcao_pelo_simples !== undefined ? (dadosExtras.opcao_pelo_simples ? "SIM" : "NÃO") : "Desconhecido";
+            preencherDadosFornecedorNaTela(dadosEmpresa, r.email ? r.email.toLowerCase() : "", "", isSimples, "Não informada no fallback");
+            document.body.removeChild(script);
+        };
+    }
+}
+
+function preencherDadosFornecedorNaTela(empresa, email, ie, simplesNacional, ieSituacao) {
+    document.getElementById('resRazao').innerText = empresa.razao_social;
+    document.getElementById('resCnpj').innerText = empresa.cnpj;
+    document.getElementById('resCidade').innerText = empresa.cidade;
+    
+    if(document.getElementById('resSimples')) document.getElementById('resSimples').innerText = simplesNacional;
+    if(document.getElementById('resSitIE')) {
+        let spanIe = document.getElementById('resSitIE');
+        spanIe.innerText = ieSituacao;
+        spanIe.style.color = ieSituacao.includes('ATIVA') ? '#28a745' : '#dc3545';
+    }
+
+    document.getElementById('resTel').value = empresa.telefone; 
+    
+    document.getElementById('resCodMun').value = empresa.cod_municipio;
+    document.getElementById('resEmail').value = email;
+    
+    if (ie) {
+        document.getElementById('resIE').value = ie;
+    } else {
+        document.getElementById('resIE').value = ""; // Limpa IE caso o fallback não a forneça
+    }
+    
+    document.getElementById('resultadoFornecedor').style.display = 'block';
+    exibirStatus('statusFornecedor', "✅ Dados carregados com sucesso!", "#d4edda", "#155724");
 }
 
 function limparTelaFornecedores() {
@@ -816,6 +875,8 @@ function limparTelaFornecedores() {
             document.getElementById('resultadoFornecedor').style.display = 'none';
             document.getElementById('statusFornecedor').style.display = 'none';
             document.getElementById('resIE').value = "";
+            if(document.getElementById('resSimples')) document.getElementById('resSimples').innerText = "";
+            if(document.getElementById('resSitIE')) document.getElementById('resSitIE').innerText = "";
             document.getElementById('resTel').value = "";
             document.getElementById('resObs').value = "";
             document.getElementById('resEmail').value = "";
@@ -1096,7 +1157,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Preenche a versão atual na tela de Configurações
     const versionDisplay = document.getElementById('appVersionDisplay');
-    if (versionDisplay) versionDisplay.innerText = "Versão " + APP_VERSION;
+    if (versionDisplay) versionDisplay.innerText = "Versão " + APP_CONFIG.VERSION;
 
     // Define o mês atual no filtro do Dashboard ao abrir a página
     const mesAtualStr = new Date().toLocaleString('pt-BR', { month: 'long' }).toUpperCase();
@@ -1177,11 +1238,9 @@ async function carregarDashboardReal() {
     }
 
     const vendedoraLogada = document.getElementById('vendedora').value;
-    
     const userLogadoUpper = (usuarioLogado || "").toUpperCase();
-    const superAdmins = ['KAYK', 'JHONATA', 'DEBORA', 'FELIPE'];
-    const isSuperAdmin = superAdmins.includes(userLogadoUpper);
-    const isAdmin = isSuperAdmin || ['RENATA', 'CAROL'].includes(userLogadoUpper);
+    const isSuperAdmin = APP_CONFIG.ROLES.SUPER_ADMINS.includes(userLogadoUpper);
+    const isAdmin = isSuperAdmin || APP_CONFIG.ROLES.ADMINS.includes(userLogadoUpper);
     if (!vendedoraLogada && !isAdmin) return;
 
     const filtroMes = document.getElementById('filtroMesDash');
@@ -1230,10 +1289,6 @@ async function carregarDashboardReal() {
 
         // Popula Select de Vendedoras apenas se o usuário for Administrador
         const selectVend = document.getElementById('filtroVendedoraDash');
-        
-        // Defina aqui as integrantes de cada equipe para a trava funcionar:
-        const equipeRenata = ['RENATA', 'HOZANA', 'ISRAEL', 'ROSANGELA', 'SARA', 'VINICIUS']; 
-        const equipeCarol  = ['CAROL', 'ALICE', 'CHARLENE', 'HEMILLY', 'MICHELLE'];
 
         if (isAdmin && selectVend) {
             selectVend.style.display = 'inline-block';
@@ -1242,8 +1297,8 @@ async function carregarDashboardReal() {
                 if(r.c && r.c[colVend] && r.c[colVend].v) {
                     let v = String(r.c[colVend].v).toUpperCase().trim();
                     if (isSuperAdmin) vendedorasUnicas.add(v);
-                    else if (userLogadoUpper === 'RENATA' && equipeRenata.includes(v)) vendedorasUnicas.add(v);
-                    else if (userLogadoUpper === 'CAROL' && equipeCarol.includes(v)) vendedorasUnicas.add(v);
+                    else if (userLogadoUpper === 'RENATA' && APP_CONFIG.TEAMS.RENATA.includes(v)) vendedorasUnicas.add(v);
+                    else if (userLogadoUpper === 'CAROL' && APP_CONFIG.TEAMS.CAROL.includes(v)) vendedorasUnicas.add(v);
                 }
             });
             let currentVal = selectVend.value;
@@ -1268,8 +1323,8 @@ async function carregarDashboardReal() {
                     let vendedoraMatch = false;
                     if (fVend === "TODAS") {
                         if (isSuperAdmin) vendedoraMatch = true;
-                        else if (userLogadoUpper === 'RENATA' && equipeRenata.includes(v)) vendedoraMatch = true;
-                        else if (userLogadoUpper === 'CAROL' && equipeCarol.includes(v)) vendedoraMatch = true;
+                        else if (userLogadoUpper === 'RENATA' && APP_CONFIG.TEAMS.RENATA.includes(v)) vendedoraMatch = true;
+                        else if (userLogadoUpper === 'CAROL' && APP_CONFIG.TEAMS.CAROL.includes(v)) vendedoraMatch = true;
                         else if (v === userLogadoUpper) vendedoraMatch = true;
                     } else {
                         vendedoraMatch = (v === fVend);
@@ -1350,9 +1405,9 @@ async function carregarDashboardReal() {
             if (isSuperAdmin) {
                 isVendaValida = true; // Diretoria vê tudo
             } else if (userLogadoUpper === 'RENATA') {
-                isVendaValida = equipeRenata.includes(rowVend);
+                isVendaValida = APP_CONFIG.TEAMS.RENATA.includes(rowVend);
             } else if (userLogadoUpper === 'CAROL') {
-                isVendaValida = equipeCarol.includes(rowVend);
+                isVendaValida = APP_CONFIG.TEAMS.CAROL.includes(rowVend);
             } else {
                 isVendaValida = (rowVend === userLogadoUpper);
             }
@@ -1368,7 +1423,7 @@ async function carregarDashboardReal() {
             let valTotalGeral = unmaskValor(rawTotalGeral);
 
             if (rowDate && valTotalGeral > 0) {
-                let isEquipeValid = isSuperAdmin || (userLogadoUpper === 'RENATA' && equipeRenata.includes(rowVend)) || (userLogadoUpper === 'CAROL' && equipeCarol.includes(rowVend)) || rowVend === userLogadoUpper;
+                let isEquipeValid = isSuperAdmin || (userLogadoUpper === 'RENATA' && APP_CONFIG.TEAMS.RENATA.includes(rowVend)) || (userLogadoUpper === 'CAROL' && APP_CONFIG.TEAMS.CAROL.includes(rowVend)) || rowVend === userLogadoUpper;
                 
                 if (!vendasMetas.porVendedora[rowVend]) vendasMetas.porVendedora[rowVend] = { diaria: 0, semanal: 0, mensal: 0 };
                 
@@ -1465,13 +1520,9 @@ async function carregarDashboardReal() {
 
 function renderizarDashAvancado(rows, mesAtual, anoAtual, colVend, colTotal, colEmpresa, colCli, vendedoraLogada, valInicio, valFim, fVend, colComissao = 25, colRep = 17, fRep = "TODOS") {
     const userLogadoUpper = (usuarioLogado || "").toUpperCase();
-    const superAdmins = ['KAYK', 'JHONATA', 'DEBORA', 'FELIPE'];
-    const isSuperAdmin = superAdmins.includes(userLogadoUpper);
-    const isAdmin = isSuperAdmin || ['RENATA', 'CAROL'].includes(userLogadoUpper);
-    
-    const equipeRenata = ['RENATA', 'HOZANA', 'ISRAEL', 'ROSANGELA', 'SARA', 'VINICIUS']; 
-    const equipeCarol  = ['CAROL', 'ALICE', 'CHARLENE', 'HEMILLY', 'MICHELLE'];
-    
+    const isSuperAdmin = APP_CONFIG.ROLES.SUPER_ADMINS.includes(userLogadoUpper);
+    const isAdmin = isSuperAdmin || APP_CONFIG.ROLES.ADMINS.includes(userLogadoUpper);
+        
     const isDark = document.body.classList.contains('dark-mode');
 
     Chart.defaults.color = isDark ? '#e0e0e0' : '#666';
@@ -1528,9 +1579,9 @@ function renderizarDashAvancado(rows, mesAtual, anoAtual, colVend, colTotal, col
             if (isSuperAdmin) {
                 isVendaValida = true;
             } else if (userLogadoUpper === 'RENATA') {
-                isVendaValida = equipeRenata.includes(vendedora);
+                isVendaValida = APP_CONFIG.TEAMS.RENATA.includes(vendedora);
             } else if (userLogadoUpper === 'CAROL') {
-                isVendaValida = equipeCarol.includes(vendedora);
+                isVendaValida = APP_CONFIG.TEAMS.CAROL.includes(vendedora);
             } else {
                 isVendaValida = (vendedora === userLogadoUpper);
             }
