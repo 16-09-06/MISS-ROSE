@@ -752,6 +752,11 @@ async function consultarFornecedor() {
         const uf = estab.estado ? estab.estado.sigla : "";
         const ibge = estab.cidade ? estab.cidade.ibge_id : "N/A";
         
+        let tel1 = estab.telefone1 || "";
+        if (estab.ddd1 && tel1) {
+            tel1 = `(${estab.ddd1}) ${tel1}`;
+        }
+        
         // Pega a primeira Inscrição Estadual ativa, se houver
         let ieEncontrada = "";
         let ieSituacao = "NÃO POSSUI / ISENTO (Não Contribuinte)";
@@ -775,7 +780,7 @@ async function consultarFornecedor() {
             razao_social: r.razao_social || estab.nome_fantasia || "N/A",
             cidade: `${cidade} - ${uf}`,
             cod_municipio: ibge,
-            telefone: estab.telefone1 || "",
+            telefone: tel1,
             cep: estab.cep || "N/A",
             endereco: `${estab.tipo_logradouro || ''} ${estab.logradouro || ''}, ${estab.numero || ''}`,
             bairro: estab.bairro || "N/A"
@@ -836,6 +841,7 @@ function preencherDadosFornecedorNaTela(empresa, email, ie, simplesNacional, ieS
     document.getElementById('resRazao').innerText = empresa.razao_social;
     document.getElementById('resCnpj').innerText = empresa.cnpj;
     document.getElementById('resCidade').innerText = empresa.cidade;
+    if(document.getElementById('resBairro')) document.getElementById('resBairro').innerText = empresa.bairro;
     
     if(document.getElementById('resSimples')) document.getElementById('resSimples').innerText = simplesNacional;
     if(document.getElementById('resSitIE')) {
@@ -877,6 +883,7 @@ function limparTelaFornecedores() {
             document.getElementById('resIE').value = "";
             if(document.getElementById('resSimples')) document.getElementById('resSimples').innerText = "";
             if(document.getElementById('resSitIE')) document.getElementById('resSitIE').innerText = "";
+            if(document.getElementById('resBairro')) document.getElementById('resBairro').innerText = "";
             document.getElementById('resTel').value = "";
             document.getElementById('resObs').value = "";
             document.getElementById('resEmail').value = "";
