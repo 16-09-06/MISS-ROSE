@@ -72,12 +72,6 @@
     <div class="container" style="max-width: 350px; border-top: none;">
         <img src="logo_missrose.png" style="width: 150px; margin-bottom: 20px; background: white; padding: 10px; border-radius: 10px;">
         
-        <!-- ABAS DE NAVEGAÇÃO -->
-        <div style="display: flex; gap: 10px; margin-bottom: 20px; width: 100%;">
-            <button id="btnTabEntrar" onclick="alternarAbaAuth('entrar')" style="flex: 1; padding: 10px; font-size: 14px;">Entrar</button>
-            <button id="btnTabCadastrar" onclick="alternarAbaAuth('cadastrar')" style="flex: 1; background: #ccc; color: #333; padding: 10px; font-size: 14px;">Cadastrar</button>
-        </div>
-
         <h2 id="tituloAuth" style="color: var(--primary); margin-bottom: 20px;">Acesso Restrito</h2>
         
         <!-- FORMULÁRIO DE LOGIN -->
@@ -90,18 +84,6 @@
                 <i class="fas fa-eye" id="toggleSenhaLogin" onclick="mostrarSenha('senhaLogin', 'toggleSenhaLogin')" style="position: absolute; right: 10px; top: 12px; cursor: pointer; color: #888;"></i>
             </div>
             <button onclick="realizarLogin()">🔓 Entrar no Sistema</button>
-        </div>
-
-        <!-- FORMULÁRIO DE CADASTRO -->
-        <div id="formCadastrar" class="hidden">
-            <label>Nome Completo:</label>
-            <input type="text" id="novoNome" placeholder="Ex: MARIA SILVA" oninput="this.value = this.value.toUpperCase()">
-            <label>Crie uma Senha:</label>
-            <div style="position: relative;">
-                <input type="password" id="novaSenha" placeholder="Mínimo 4 caracteres">
-                <i class="fas fa-eye" id="toggleNovaSenha" onclick="mostrarSenha('novaSenha', 'toggleNovaSenha')" style="position: absolute; right: 10px; top: 12px; cursor: pointer; color: #888;"></i>
-            </div>
-            <button onclick="cadastrarNovoVendedor()">💾 Salvar Cadastro</button>
         </div>
 
         <div id="loginStatus" style="color: red; font-size: 13px; margin-top: 10px; display: none;"></div>
@@ -581,6 +563,25 @@
         </button>
     </div>
 
+    <!-- PAINEL DE ALTERAR SENHA -->
+    <div class="result-box" style="margin-top: 20px; border-color: #ff9800;">
+        <h3 style="margin-top:0; color: #ff9800; display: flex; align-items: center; gap: 10px;"><i class="fas fa-key"></i> Alterar Minha Senha</h3>
+        
+        <label>Nova Senha:</label>
+        <div style="position: relative;">
+            <input type="password" id="configNovaSenha" placeholder="Mínimo 4 caracteres">
+            <i class="fas fa-eye" id="toggleConfigNovaSenha" onclick="mostrarSenha('configNovaSenha', 'toggleConfigNovaSenha')" style="position: absolute; right: 10px; top: 12px; cursor: pointer; color: #888;"></i>
+        </div>
+
+        <label>Confirmar Nova Senha:</label>
+        <div style="position: relative;">
+            <input type="password" id="configConfirmaSenha" placeholder="Repita a nova senha">
+            <i class="fas fa-eye" id="toggleConfigConfirmaSenha" onclick="mostrarSenha('configConfirmaSenha', 'toggleConfigConfirmaSenha')" style="position: absolute; right: 10px; top: 12px; cursor: pointer; color: #888;"></i>
+        </div>
+
+        <button id="btnAlterarSenhaConfig" onclick="alterarSenhaUsuario()" style="background: #ff9800;"><i class="fas fa-save"></i> Salvar Nova Senha</button>
+    </div>
+
     <!-- PAINEL DE ENVIO DE NOTIFICAÇÕES (SÓ PARA ADMINS) -->
     <div id="painelAdminPush" class="result-box hidden" style="margin-top: 20px; border-color: #8e44ad;">
         <h3 style="margin-top:0; color: #8e44ad; display: flex; align-items: center; gap: 10px;"><i class="fas fa-paper-plane"></i> Enviar Notificação Geral</h3>
@@ -632,10 +633,7 @@
         
         <div id="camposLogin">
             <label>Vendedora:</label>
-            <select id="selectUser">
-                <option value="Renata">Renata</option>
-                <option value="Carol">Carol</option>
-            </select>
+            <input type="text" id="selectUser" placeholder="Digite seu usuário..." oninput="this.value = this.value.toUpperCase()" onkeydown="if(event.key === 'Enter') efetuarLogin()">
 
             <label>Senha:</label>
             <div style="position: relative;">

@@ -24,8 +24,9 @@ const ID_PLANILHA_METAS = "13loIiCcoWr2x-S8i1nD-EmCoUsNLmj3JoXNxW1cHr24"; //ID D
 // --- CONFIGURAÇÕES GLOBAIS DO APP ---
 const APP_CONFIG = {
     VERSION: "1.1.1",
+    SENHA_PADRAO: "1234", // Defina aqui a senha padrão usada por todas as vendedoras novas
     ROLES: {
-        SUPER_ADMINS: ['KAYK', 'JHONATA', 'DEBORA', 'FELIPE'],
+        SUPER_ADMINS: ['KAYK', 'JHONATA', 'DEBORA', 'FELIPE', 'TESTE', 'TESTE2', 'TESTE3'],
         ADMINS: ['RENATA', 'CAROL']
     },
     TEAMS: {
@@ -178,6 +179,7 @@ function setupAdminFeatures(user) {
 async function realizarLogin() {
     const user = document.getElementById('userLogin').value.trim().toUpperCase();
     const senhaRaw = document.getElementById('senhaLogin').value;
+    const btn = document.querySelector('#formEntrar button');
     
     const status = document.getElementById('loginStatus');
 
@@ -188,25 +190,29 @@ async function realizarLogin() {
         return;
     }
 
-    // Mensagem ANTES de tentar gerar o hash
     status.innerText = "⏳ Verificando na base de dados...";
     status.style.display = 'block';
     status.style.color = 'blue';
+    btn.disabled = true;
+    btn.innerHTML = '⏳ Aguarde...';
 
     try {
         const senhaHash = await hashPassword(senhaRaw);
         const response = await fetch(URL_LOGIN_DB, {
             method: 'POST',
+            headers: {
+                'Content-Type': 'text/plain;charset=utf-8',
+            },
             body: JSON.stringify({ acao: "login", nome: user, senha: senhaHash })
         });
         const res = await response.text();
 
         if (res === "Autorizado") {
-            document.getElementById('telaLogin').style.display = 'none';
-            localStorage.setItem('usuarioLogado', user);
-            usuarioLogado = user;
-            document.getElementById('nomeUsuarioHeader').innerHTML = `<i class="fas fa-user-circle"></i> ${user}`;
-            setAndLockVendedora(user);
+            if (senhaRaw === APP_CONFIG.SENHA_PADRAO) {
+                forcarTrocaSenha(user, efetivarAcesso);
+            } else {
+                efetivarAcesso(user);
+            }
         } else {
             status.innerText = "❌ Usuário ou senha incorretos!";
             status.style.color = 'red';
@@ -219,6 +225,76 @@ async function realizarLogin() {
                 status.innerText = "❌ Erro de conexão!";
             }
         status.style.color = 'red';
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '🔓 Entrar no Sistema';
+    }
+}
+
+function efetivarAcesso(user) {
+    document.getElementById('telaLogin').style.display = 'none';
+    localStorage.setItem('usuarioLogado', user);
+    usuarioLogado = user;
+    document.getElementById('nomeUsuarioHeader').innerHTML = `<i class="fas fa-user-circle"></i> ${user}`;
+    setAndLockVendedora(user);
+}
+
+async function forcarTrocaSenha(user, callbackSucesso) {
+    const { value: novaSenha } = await Swal.fire({
+        title: '🔒 Atualização de Segurança',
+        text: 'Como este é o seu primeiro acesso, você precisa criar uma senha pessoal. Essa senha não pode ser igual à senha padrão.',
+        input: 'password',
+        inputPlaceholder: 'Digite sua nova senha',
+        inputAttributes: {
+            minlength: 4,
+            autocapitalize: 'off',
+            autocorrect: 'off'
+        },
+        showCancelButton: false,
+        confirmButtonText: 'Salvar e Entrar',
+        confirmButtonColor: '#d81b60',
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        preConfirm: (senha) => {
+            if (!senha || senha.length < 4) {
+                Swal.showValidationMessage('A senha deve ter no mínimo 4 caracteres');
+            } else if (senha === APP_CONFIG.SENHA_PADRAO) {
+                Swal.showValidationMessage('A nova senha não pode ser igual à senha padrão!');
+            }
+            return senha;
+        }
+    });
+
+    if (novaSenha) {
+        try {
+            const senhaHash = await hashPassword(novaSenha);
+            Swal.fire({
+                title: 'Atualizando...',
+                allowOutsideClick: false,
+                didOpen: () => { Swal.showLoading(); }
+            });
+
+            const response = await fetch(URL_LOGIN_DB, {
+                method: 'POST',
+                body: JSON.stringify({ acao: "alterarSenha", nome: user, senha: senhaHash })
+            });
+            const res = await response.text();
+
+            if (res === "Sucesso" || res.includes("ucesso") || res === "Autorizado") {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Senha Atualizada!',
+                    text: 'Sua senha foi alterada com sucesso.',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+                setTimeout(() => callbackSucesso(user), 2000);
+            } else {
+                Swal.fire('Erro', 'Não foi possível alterar a senha na planilha. Verifique o Apps Script.', 'error');
+            }
+        } catch (e) {
+            Swal.fire('Erro', 'Erro ao conectar com a planilha de acesso.', 'error');
+        }
     }
 }
 
@@ -228,76 +304,37 @@ if (usuarioLogado) {
     setTimeout(() => setAndLockVendedora(usuarioLogado), 500);
 }
 
-async function cadastrarNovoVendedor() {
-    const nome = document.getElementById('novoNome').value.trim().toUpperCase();
-    const senhaRaw = document.getElementById('novaSenha').value;
-    const btn = document.querySelector('#formCadastrar button');
-
-    if (!nome || !senhaRaw) return Swal.fire('Atenção', 'Por favor, preencha nome e senha.', 'warning');
-    
-    btn.disabled = true;
-    btn.innerHTML = '⏳ Preparando...';
-
-    try {
-        const senhaHash = await hashPassword(senhaRaw);
-        btn.innerHTML = '💾 Salvando...';
-
-        const response = await fetch(URL_LOGIN_DB, {
-            method: 'POST',
-            body: JSON.stringify({ acao: "cadastrar", nome: nome, senha: senhaHash })
-        });
-        const texto = await response.text();
-        
-        if (texto === "Sucesso") {
-            Swal.fire({
-                icon: 'success',
-                title: 'Cadastro Realizado!',
-                text: `O usuário ${nome} foi criado. Agora você já pode entrar no sistema.`,
-                timer: 3000,
-                showConfirmButton: false
-            });
-
-            document.getElementById('novoNome').value = '';
-            document.getElementById('novaSenha').value = '';
-            alternarAbaAuth('entrar');
-            document.getElementById('userLogin').value = nome;
-            document.getElementById('senhaLogin').focus();
-        } else {
-            Swal.fire('Erro', 'Não foi possível realizar o cadastro. O usuário pode já existir.', 'error');
-        }
-    } catch (e) {
-            console.error(e);
-            if (e.message && e.message.includes("Criptografia")) {
-                Swal.fire('Erro de Segurança', 'Seu navegador bloqueou o cadastro pois você abriu o arquivo direto do Windows. É necessário um servidor Web.', 'error');
-            } else {
-                Swal.fire('Erro', 'Erro ao conectar com a planilha de acesso.', 'error');
-            }
-    } finally {
-        btn.disabled = false;
-        btn.innerHTML = '💾 Salvar Cadastro';
-    }
-}
-
 async function efetuarLogin() {
-    const user = document.getElementById('selectUser').value;
+    const user = document.getElementById('selectUser').value.trim().toUpperCase();
     const senhaRaw = document.getElementById('senhaInput').value;
+    const btn = document.querySelector('#camposLogin button');
     
     if (!senhaRaw) {
         Swal.fire('Atenção', 'Preencha a senha!', 'warning');
         return;
     }
 
+    btn.disabled = true;
+    btn.innerHTML = '⏳ Aguarde...';
+
     try {
         const senhaHash = await hashPassword(senhaRaw);
 
         const response = await fetch(URL_LOGIN_DB, {
             method: 'POST',
+            headers: {
+                'Content-Type': 'text/plain;charset=utf-8',
+            },
             body: JSON.stringify({ acao: "login", nome: user, senha: senhaHash })
         });
         const resultado = await response.text();
 
         if (resultado === "Autorizado") {
-            salvarSessao(user);
+            if (senhaRaw === APP_CONFIG.SENHA_PADRAO) {
+                forcarTrocaSenha(user, salvarSessao);
+            } else {
+                salvarSessao(user);
+            }
         } else {
             Swal.fire('Erro', "❌ Senha incorreta para " + user, 'error');
         }
@@ -308,6 +345,9 @@ async function efetuarLogin() {
             } else {
                 Swal.fire('Erro', "Erro ao validar login no banco de dados.", 'error');
             }
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = 'Entrar';
     }
 }
 
@@ -347,28 +387,55 @@ function mostrarSenha(inputId = 'senhaInput', iconId = 'toggleSenha') {
     }
 }
 
-function alternarAbaAuth(tipo) {
-    const btnE = document.getElementById('btnTabEntrar');
-    const btnC = document.getElementById('btnTabCadastrar');
-    const formE = document.getElementById('formEntrar');
-    const formC = document.getElementById('formCadastrar');
-    
-    if(tipo === 'entrar') {
-        btnE.style.background = 'var(--primary)'; btnE.style.color = 'white';
-        btnC.style.background = '#ccc'; btnC.style.color = '#333';
-        formE.classList.remove('hidden'); formC.classList.add('hidden');
-        document.getElementById('tituloAuth').innerText = "Acesso Restrito";
-    } else {
-        btnC.style.background = 'var(--primary)'; btnC.style.color = 'white';
-        btnE.style.background = '#ccc'; btnE.style.color = '#333';
-        formC.classList.remove('hidden'); formE.classList.add('hidden');
-        document.getElementById('tituloAuth').innerText = "Novo Vendedor";
-    }
-}
-
 function efetuarLogout() {
     localStorage.removeItem('usuarioLogado');
     location.reload(); 
+}
+
+async function alterarSenhaUsuario() {
+    const novaSenha = document.getElementById('configNovaSenha').value;
+    const confirmaSenha = document.getElementById('configConfirmaSenha').value;
+    const btn = document.getElementById('btnAlterarSenhaConfig');
+
+    if (!novaSenha || !confirmaSenha) {
+        return Swal.fire('Atenção', 'Preencha todos os campos.', 'warning');
+    }
+    if (novaSenha.length < 4) {
+        return Swal.fire('Atenção', 'A senha deve ter no mínimo 4 caracteres.', 'warning');
+    }
+    if (novaSenha !== confirmaSenha) {
+        return Swal.fire('Atenção', 'As senhas não conferem.', 'warning');
+    }
+    if (novaSenha === APP_CONFIG.SENHA_PADRAO) {
+        return Swal.fire('Atenção', 'A nova senha não pode ser igual à senha padrão do sistema.', 'warning');
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
+
+    try {
+        const senhaHash = await hashPassword(novaSenha);
+        const response = await fetch(URL_LOGIN_DB, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({ acao: "alterarSenha", nome: usuarioLogado, senha: senhaHash })
+        });
+        const res = await response.text();
+
+        if (res === "Sucesso" || res.includes("ucesso") || res === "Autorizado") {
+            Swal.fire('Sucesso!', 'Sua senha foi alterada com sucesso.', 'success');
+            document.getElementById('configNovaSenha').value = '';
+            document.getElementById('configConfirmaSenha').value = '';
+        } else {
+            Swal.fire('Erro', 'Não foi possível alterar a senha. Tente novamente.', 'error');
+        }
+    } catch (e) {
+        console.error(e);
+        Swal.fire('Erro', 'Falha na comunicação com o banco de dados.', 'error');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-save"></i> Salvar Nova Senha';
+    }
 }
 
 const UIElements = {
