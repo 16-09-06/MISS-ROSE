@@ -50,8 +50,12 @@ self.addEventListener('activate', (e) => {
 
 // Interceptação de rede: Estratégia Stale-While-Revalidate para os arquivos do app
 self.addEventListener('fetch', (e) => {
-    // Não fazemos cache de chamadas da API e Planilhas do Google
-    if (e.request.url.includes('script.google.com') || e.request.url.includes('docs.google.com')) {
+    // 🚨 REGRA DE OURO: Nunca fazer cache de envios POST ou APIs externas!
+    if (e.request.method !== 'GET' || 
+        e.request.url.includes('script.google.com') || 
+        e.request.url.includes('script.googleusercontent.com') || 
+        e.request.url.includes('docs.google.com') ||
+        e.request.url.includes('pythonanywhere.com')) {
         return;
     }
 
