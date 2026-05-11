@@ -212,12 +212,8 @@ async function realizarLogin() {
         });
         const res = await response.text();
 
-        if (res.trim().toLowerCase() === "autorizado") {    
-            if (senhaRaw === APP_CONFIG.SENHA_PADRAO) {
-                forcarTrocaSenha(user, efetivarAcesso);
-            } else {
-                efetivarAcesso(user);
-            }
+        if (res.trim().toLowerCase() === "autorizado") {
+            efetivarAcesso(user); // Simplificado: Se a senha bateu, entra direto.
         } else {
             status.innerText = "❌ Usuário ou senha incorretos!";
             status.style.color = 'red';
@@ -337,11 +333,7 @@ async function efetuarLogin() {
         const resultado = await response.text();
 
         if (resultado.includes("Autorizado") || resultado.trim() === "Autorizado") {
-            if (senhaRaw === APP_CONFIG.SENHA_PADRAO) {
-                forcarTrocaSenha(user, salvarSessao);
-            } else {
-                salvarSessao(user);
-            }
+            salvarSessao(user); // Simplificado: Se a senha bateu, salva a sessão e recarrega.
         } else {
             Swal.fire('Erro', "❌ Senha incorreta para " + user, 'error');
         }
