@@ -2358,9 +2358,11 @@ async function checkPushSubscription() {
             pushButton.innerHTML = '<i class="fas fa-check-circle"></i> Inscrito';
             pushButton.disabled = true;
         }
-        // ✅ Re-registra silenciosamente caso o servidor tenha reiniciado
-        //    (evita perder inscrições após restart do Flask)
-        salvarInscricaoNoBackend(subscription, usuarioLogado);
+        
+        // Só tenta salvar se o usuário já fez login!
+        if (usuarioLogado) {
+            salvarInscricaoNoBackend(subscription, usuarioLogado);
+        }
     }
 }
  
