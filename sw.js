@@ -1,6 +1,6 @@
 
 
-const CACHE_NAME = 'missrose-v9';
+const CACHE_NAME = 'missrose-v11';
 const urlsToCache = [
 
     './',
@@ -62,8 +62,11 @@ self.addEventListener('fetch', (e) => {
     e.respondWith(
         caches.match(e.request).then((cachedResponse) => {
             const fetchPromise = fetch(e.request).then((networkResponse) => {
+                // ✅ CLONE AQUI: Antes de tentar abrir o cache!
+                const responseClone = networkResponse.clone();
+                
                 caches.open(CACHE_NAME).then((cache) => {
-                    cache.put(e.request, networkResponse.clone());
+                    cache.put(e.request, responseClone);
                 });
                 return networkResponse;
             }).catch(() => { /* Tratar fallback de conexão, se necessário */ });
