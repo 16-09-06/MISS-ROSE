@@ -212,7 +212,7 @@ async function realizarLogin() {
         });
         const res = await response.text();
 
-        if (res.trim().toLowerCase() === "autorizado") {    
+        if (res.trim().toLowerCase() === "Autorizado") {    
             if (senhaRaw === APP_CONFIG.SENHA_PADRAO) {
                 forcarTrocaSenha(user, efetivarAcesso);
             } else {
