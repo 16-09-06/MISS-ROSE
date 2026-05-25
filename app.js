@@ -918,6 +918,9 @@ function preencherDadosFornecedorNaTela(empresa, email, ie, simplesNacional, ieS
 
     document.getElementById('resTel').value = empresa.telefone; 
     
+    if (document.getElementById('resCep')) document.getElementById('resCep').value = empresa.cep;
+    if (document.getElementById('resEndereco')) document.getElementById('resEndereco').value = empresa.endereco;
+    
     document.getElementById('resCodMun').value = empresa.cod_municipio;
     document.getElementById('resEmail').value = email;
     
@@ -951,6 +954,8 @@ function limparTelaFornecedores() {
             if(document.getElementById('resSitIE')) document.getElementById('resSitIE').innerText = "";
             if(document.getElementById('resBairro')) document.getElementById('resBairro').innerText = "";
             document.getElementById('resTel').value = "";
+            if (document.getElementById('resCep')) document.getElementById('resCep').value = "";
+            if (document.getElementById('resEndereco')) document.getElementById('resEndereco').value = "";
             document.getElementById('resObs').value = "";
             document.getElementById('resEmail').value = "";
             document.getElementById('resCodMun').value = "";
@@ -983,8 +988,8 @@ async function salvarFornecedorNaPlanilha() {
         razao_social: document.getElementById('resRazao').innerText,
         cidade: document.getElementById('resCidade').innerText,
         telefone: document.getElementById('resTel').value,
-        cep: dadosEmpresa.cep,
-        endereco: dadosEmpresa.endereco,
+        cep: document.getElementById('resCep') ? document.getElementById('resCep').value : dadosEmpresa.cep,
+        endereco: document.getElementById('resEndereco') ? document.getElementById('resEndereco').value : dadosEmpresa.endereco,
         bairro: dadosEmpresa.bairro,
         ie_status: "MANUAL", 
         email: document.getElementById('resEmail').value || "N/A",
